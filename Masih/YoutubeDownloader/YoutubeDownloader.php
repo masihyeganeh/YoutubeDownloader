@@ -157,7 +157,7 @@ class YoutubeDownloader
 	 */
 	protected function getExtension($mimetype)
 	{
-		$mime = new Dflydev\ApacheMimeTypes\FlatRepository;
+		$mime = new \Dflydev\ApacheMimeTypes\FlatRepository;
 		$extension = 'mp4';
 		$extensions = $mime->findExtensions($mimetype);
 		if (count($extensions))

@@ -75,7 +75,7 @@ class YoutubeDownloader
 	public function getVideoInfo()
 	{
 		$result = array();	
-		$response = Requests::get('http://www.youtube.com/get_video_info?el=detailpage&ps=default&eurl=&gl=US&hl=en&sts=15888&video_id=' . $this->videoId);
+		$response = \Requests::get('http://www.youtube.com/get_video_info?el=detailpage&ps=default&eurl=&gl=US&hl=en&sts=15888&video_id=' . $this->videoId);
 		if (!$response->success)
 			throw new YoutubeException('Couldn\'t get video details.', 1);
 
@@ -185,7 +185,7 @@ class YoutubeDownloader
 			'cookies' => array('url=http://www.youtube.com/watch?v=' . $this->videoId)
 		);
 
-		$response = Requests::get($url, null, $options);
+		$response = \Requests::get($url, null, $options);
 
 		$size = filesize($tempFilename);
 		$remained = intval($response->headers['content-length']);

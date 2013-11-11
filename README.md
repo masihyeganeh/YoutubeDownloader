@@ -3,6 +3,11 @@ Youtube Downloader
 
 Youtube video downloader
 
+[![Build Status](https://travis-ci.org/masihyeganeh/YoutubeDownloader.png)](https://travis-ci.org/masihyeganeh/YoutubeDownloader)
+[![Latest Stable Version](https://poser.pugx.org/masih/googleplay/v/stable.png)](https://packagist.org/packages/masih/googleplay)
+[![Latest Unstable Version](https://poser.pugx.org/masih/googleplay/v/unstable.png)](https://packagist.org/packages/masih/googleplay)
+[![Coverage Status](https://coveralls.io/repos/masihyeganeh/YoutubeDownloader/badge.png)](https://coveralls.io/r/masihyeganeh/YoutubeDownloader)
+[![Total Downloads](https://poser.pugx.org/masih/googleplay/downloads.png)](https://packagist.org/packages/masih/googleplay)
 
 
 Installation
@@ -31,6 +36,8 @@ for example for `http://youtube.com/watch?v=gmFn62dr0D8`, video id is `gmFn62dr0
 <?php
 include 'vendor/autoload.php';
 
+use Masih\YoutubeDownloader\YoutubeDownloader;
+
 $youtube = new YoutubeDownloader('gmFn62dr0D8');
 
 $result = $youtube->getVideoInfo();
@@ -56,6 +63,8 @@ if no `itag` is passed, it will download highest quality of Full format.
 set_time_limit(0); // Downloading a video may take a lot time
 
 include 'vendor/autoload.php';
+
+use Masih\YoutubeDownloader\YoutubeDownloader;
 
 $youtube = new YoutubeDownloader('gmFn62dr0D8');
 

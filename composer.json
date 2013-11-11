@@ -1,0 +1,35 @@
+{
+    "name": "masih/youtubedownloader",
+    "type": "library",
+    "description": "Youtube video downloader",
+    "keywords": ["youtube", "download", "downloader", "simple", "masih"],
+    "version": "1.0",
+    "homepage": "https://github.com/masihyeganeh/YoutubeDownloader",
+    "license": "MIT",
+
+    "authors": [
+        {
+            "name": "Masih Yeganeh",
+            "homepage": "http://www.dogtag.ir/"
+        }
+    ],
+
+    "support":{
+        "email":"goodboy.php@gmail.com",
+        "issues":"https://github.com/masihyeganeh/YoutubeDownloader/issues"
+    },
+
+    "require": {
+        "php": ">=5.0",
+        "rmccue/requests": ">=1.0",
+        "dflydev/apache-mime-types": "1.0.*@dev"
+    },
+
+    "require-dev": {
+        "janmarek/mockista": "dev-master"
+    },
+
+    "autoload": {
+        "psr-0": {"Masih": ""}
+    }
+}

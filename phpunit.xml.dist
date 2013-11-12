@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit bootstrap="./Tests/bootstrap.php">
+  <testsuites>
+    <testsuite>
+      <directory>./Tests</directory>
+    </testsuite>
+  </testsuites>
+
+  <logging>
+    <log type="coverage-html" target="coverage" title="PHPUnit"
+      charset="UTF-8" yui="true" highlight="true"
+      lowUpperBound="35" highLowerBound="90"/>
+  </logging>
+
+  <filter>
+    <whitelist>
+      <directory suffix=".php">./Masih</directory>
+    </whitelist>
+  </filter>
+</phpunit>

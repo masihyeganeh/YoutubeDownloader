@@ -8,6 +8,7 @@ Youtube video downloader
 [![Latest Unstable Version](https://poser.pugx.org/masih/googleplay/v/unstable.png)](https://packagist.org/packages/masih/googleplay)
 [![Coverage Status](https://coveralls.io/repos/masihyeganeh/YoutubeDownloader/badge.png)](https://coveralls.io/r/masihyeganeh/YoutubeDownloader)
 [![Total Downloads](https://poser.pugx.org/masih/googleplay/downloads.png)](https://packagist.org/packages/masih/googleplay)
+[![Dependency Status](https://www.versioneye.com/user/projects/5281d3db632baca88e000127#dialog_dependency_badge/badge.png)](https://www.versioneye.com/user/projects/5281d3db632baca88e000127#dialog_dependency_badge)
 
 
 Installation

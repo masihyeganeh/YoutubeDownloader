@@ -72,6 +72,25 @@ $youtube = new YoutubeDownloader('gmFn62dr0D8');
 $youtube->download();
 ```
 
+   
+### Download progress
+
+Download progress is available via `onProgress` parameter.
+it's a closure and has two parameters `$downloadedBytes` and `$fileSize`.
+
+```php
+<?php
+$youtube = new YoutubeDownloader('gmFn62dr0D8');
+
+
+$youtube->onProgress = function ($downloadedBytes, $fileSize) {
+	echo 'Downloaded '$downloadedBytes . ' of ' . $fileSize . ' bytes.' . "\n";
+};
+
+
+$youtube->download();
+```
+
 
 License
 -------

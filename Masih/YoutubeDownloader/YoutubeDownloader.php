@@ -6,7 +6,7 @@
  * @author Masih Yeganeh <masihyeganeh@outlook.com>
  * @package YoutubeDownloader
  *
- * @version 1.0
+ * @version 1.1
  * @license http://opensource.org/licenses/MIT MIT
  */
 
@@ -33,7 +33,32 @@ class YoutubeDownloader
 	protected $path = 'videos';
 
 	/**
-	 * Instantiates a YoutubeDownloader
+	 * Web client object
+	 * @var \Guzzle\Http\Client
+	 */
+	protected $webClient;
+
+	/**
+	 * Number of downloaded bytes of file
+	 * @var integer
+	 */
+	protected $downloadedBytes;
+
+	/**
+	 * Size of file to be download in bytes
+	 * @var integer
+	 */
+	protected $fileSize;
+
+	/**
+	 * Callable function that is called on download progress
+	 * @var callable
+	 * @todo This shows wrong number for files with above 2GB size
+	 */
+	public $onProgress;
+
+	/**
+	 * Instantiates a YoutubeDownloader with a random User-Agent
 	 * @param string $videoUrl Full Youtube video url or just video ID
 	 * @example var downloader = new YoutubeDownloader('gmFn62dr0D8');
 	 * @example var downloader = new YoutubeDownloader('http://www.youtube.com/watch?v=gmFn62dr0D8');
@@ -41,6 +66,10 @@ class YoutubeDownloader
 	public function __construct($videoUrl)
 	{
 		$this->videoId = $this->getVideoIdFromUrl($videoUrl);
+		$this->webClient = new \Guzzle\Http\Client();
+		$this->webClient->setUserAgent(\random_uagent());
+
+		$this->onProgress = function ($downloadedBytes, $fileSize) {};
 	}
 
 	/**
@@ -74,12 +103,12 @@ class YoutubeDownloader
 	 */
 	public function getVideoInfo()
 	{
-		$result = array();	
-		$response = \Requests::get('http://www.youtube.com/get_video_info?el=detailpage&ps=default&eurl=&gl=US&hl=en&sts=15888&video_id=' . $this->videoId);
-		if (!$response->success)
+		$result = array();
+		$response = $this->webClient->get('http://www.youtube.com/get_video_info?el=detailpage&ps=default&eurl=&gl=US&hl=en&sts=15888&video_id=' . $this->videoId)->send();
+		if (!$response->isSuccessful())
 			throw new YoutubeException('Couldn\'t get video details.', 1);
 
-		parse_str($response->body, $data);
+		parse_str($response->getBody(true), $data);
 		if (isset($data['status']) && $data['status'] == 'fail')
 			throw new YoutubeException($data['reason'], $data['errorcode']);
 
@@ -87,8 +116,14 @@ class YoutubeDownloader
 		$result['image'] = array(
 			'max_resolution' => 'http://i1.ytimg.com/vi/' . $this->videoId . '/maxresdefault.jpg',
 			'high_quality' => 'http://i1.ytimg.com/vi/' . $this->videoId . '/hqdefault.jpg',
+			'medium_quality' => 'http://i1.ytimg.com/vi/' . $this->videoId . '/mqdefault.jpg',
 			'standard' => 'http://i1.ytimg.com/vi/' . $this->videoId . '/sddefault.jpg',
-			'thumbnail' => 'http://i1.ytimg.com/vi/' . $this->videoId . '/default.jpg'
+			'thumbnails' => array(
+				'http://i1.ytimg.com/vi/' . $this->videoId . '/default.jpg',
+				'http://i1.ytimg.com/vi/' . $this->videoId . '/1.jpg',
+				'http://i1.ytimg.com/vi/' . $this->videoId . '/2.jpg',
+				'http://i1.ytimg.com/vi/' . $this->videoId . '/3.jpg'
+			)
 		);
 		$result['length_seconds'] = $data['length_seconds'];
 
@@ -171,21 +206,22 @@ class YoutubeDownloader
 	 * @param  string $url  Url of file to download
 	 * @param  string $file Path of file to save to
 	 * @return object       Downloaded chunk size and bytes that remain
-	 * 
-	 * @todo Should have a "connect_timout" with value of 50 when it's available in rmccue/Requests's next release
 	 */
-	protected function downloadFile($url, $file)
+	protected function downloadFile($url, $file, callable $onProgress)
 	{
 		$tempFilename = $file . '_temp_' . time();
 		$options = array(
-			'filename' => $tempFilename,
+			'save_to' => fopen($tempFilename, 'a'),
 			'verify' => false,
 			'timeout' => 0,
-			'useragent' => 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.8 (KHTML, like Gecko) Chrome/23.0.1248.0 Safari/537.8',
+			'connect_timeout' => 50,
 			'cookies' => array('url=http://www.youtube.com/watch?v=' . $this->videoId)
 		);
 
-		$response = \Requests::get($url, null, $options);
+		$request = $this->webClient->get($url, array(), $options);
+		$request->getCurlOptions()->set('progress', true);
+		$request->getEventDispatcher()->addListener('curl.callback.progress', $onProgress);
+		$response = $request->send();
 
 		$size = filesize($tempFilename);
 		$remained = intval($response->headers['content-length']);
@@ -242,8 +278,6 @@ class YoutubeDownloader
 			if ($video->itag == $itag)
 				return $this->downloadAdaptive($video->url, $video->filename, $resume);
 		}
-
-		return $this->downloadFile($url, $file);
 	}
 
 	/**
@@ -259,7 +293,18 @@ class YoutubeDownloader
 		if (file_exists($file) && !$resume)
 			unlink($file);
 
-		return $this->downloadFile($url, $file);
+		$downloadedBytes = &$this->downloadedBytes;
+		$fileSize = &$this->fileSize;
+		$onProgress = &$this->onProgress;
+
+		return $this->downloadFile($url, $file, function (\Guzzle\Common\Event $e) use ($downloadedBytes, $fileSize, $onProgress) {
+			if (!$e['downloaded'] && !$e['download_size']) return;
+			if ($downloadedBytes != $e['downloaded'])
+				$onProgress($e['downloaded'], $e['download_size']);
+
+			$downloadedBytes = $e['downloaded'];
+			$fileSize = $e['download_size'];
+		});
 	}
 
 	/**
@@ -283,10 +328,21 @@ class YoutubeDownloader
 				unlink($file);
 		}
 
+		$downloadedBytes = &$this->downloadedBytes;
+		$fileSize = &$this->fileSize;
+		$onProgress = &$this->onProgress;
+
 		$tries = 0;
 		while ($tries++ < $maxPartsCount)
 		{
-			$download = $this->downloadFile($url . '&range=' . $size . '-', $file);
+			$download = $this->downloadFile($url . '&range=' . $size . '-', $file, function (\Guzzle\Common\Event $e) use ($downloadedBytes, $fileSize, $onProgress)  {
+			if (!$e['downloaded'] && !$e['download_size']) return;
+			if ($downloadedBytes != $e['downloaded'])
+				$onProgress($e['downloaded'], $e['download_size']);
+
+			$downloadedBytes = $e['downloaded'];
+			$fileSize = $e['download_size'];
+		});
 
 			if ($download->remained <= 0)
 				break;

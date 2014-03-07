@@ -3,7 +3,7 @@
     "type": "library",
     "description": "Youtube video downloader",
     "keywords": ["youtube", "download", "downloader", "simple", "masih"],
-    "version": "1.0",
+    "version": "1.1",
     "homepage": "https://github.com/masihyeganeh/YoutubeDownloader",
     "license": "MIT",
 
@@ -20,9 +20,10 @@
     },
 
     "require": {
-        "php": ">=5.0",
-        "rmccue/requests": ">=1.0",
-        "dflydev/apache-mime-types": "1.0.*@dev"
+        "php": ">=5.3",
+        "guzzle/guzzle": "~3.7",
+        "dflydev/apache-mime-types": "1.0.*@dev",
+        "mwhite/random-uagent": "dev-master"
     },
 
     "require-dev": {

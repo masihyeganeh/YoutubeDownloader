@@ -6,7 +6,7 @@
  * @author Masih Yeganeh <masihyeganeh@outlook.com>
  * @package YoutubeDownloader
  *
- * @version 1.1
+ * @version 1.2.0
  * @license http://opensource.org/licenses/MIT MIT
  */
 
@@ -114,17 +114,18 @@ class YoutubeDownloader
 
 		$result['title'] = $data['title'];
 		$result['image'] = array(
-			'max_resolution' => 'http://i1.ytimg.com/vi/' . $this->videoId . '/maxresdefault.jpg',
-			'high_quality' => 'http://i1.ytimg.com/vi/' . $this->videoId . '/hqdefault.jpg',
-			'medium_quality' => 'http://i1.ytimg.com/vi/' . $this->videoId . '/mqdefault.jpg',
-			'standard' => 'http://i1.ytimg.com/vi/' . $this->videoId . '/sddefault.jpg',
 			'thumbnails' => array(
-				'http://i1.ytimg.com/vi/' . $this->videoId . '/default.jpg',
-				'http://i1.ytimg.com/vi/' . $this->videoId . '/1.jpg',
-				'http://i1.ytimg.com/vi/' . $this->videoId . '/2.jpg',
-				'http://i1.ytimg.com/vi/' . $this->videoId . '/3.jpg'
-			)
+				$data['thumbnail_url'],
+				str_replace('default.jpg', '1.jpg', $data['thumbnail_url']),
+				str_replace('default.jpg', '2.jpg', $data['thumbnail_url']),
+				str_replace('default.jpg', '3.jpg', $data['thumbnail_url']),
+			),
+			'high_quality' => $data['iurl'],
 		);
+
+		if (isset($data['iurlmaxres'])) $result['image']['max_resolution'] = $data['iurlmaxres'];
+		if (isset($data['iurlsd'])) $result['image']['standard'] = $data['iurlsd'];
+		if (isset($data['iurlmd'])) $result['image']['medium_quality'] = $data['iurlmd'];
 		$result['length_seconds'] = $data['length_seconds'];
 
 		$filename = $this->pathSafeFilename($result['title']);
@@ -138,11 +139,15 @@ class YoutubeDownloader
 		}
 		else
 		{
+			$useSig = (isset($data['use_cipher_signature']) && strtolower($data['use_cipher_signature']) == 'true');
 			$stream_maps = explode(',', $data['url_encoded_fmt_stream_map']);
 			foreach ($stream_maps as $key => $value) {
 				parse_str($value, $stream_maps[$key]);
-				$stream_maps[$key]['url'] .= '&signature=' . $stream_maps[$key]['sig'];
-				unset($stream_maps[$key]['sig']);
+				if ($useSig)
+				{
+					$stream_maps[$key]['url'] .= '&signature=' . $stream_maps[$key]['sig'];
+					unset($stream_maps[$key]['sig']);
+				}
 
 				$typeParts = explode(';', $stream_maps[$key]['type']);
 				$stream_maps[$key]['filename'] = $filename . '.' . $this->getExtension(trim($typeParts[0]));

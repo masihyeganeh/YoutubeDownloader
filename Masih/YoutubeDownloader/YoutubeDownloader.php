@@ -51,8 +51,8 @@ class YoutubeDownloader
 	protected $fileSize;
 
 	/**
-	 * Callable function that is called on download progress
-	 * @var callable
+	 * Closure function that is called on download progress
+	 * @var Closure
 	 * @todo This shows wrong number for files with above 2GB size
 	 */
 	public $onProgress;
@@ -169,6 +169,7 @@ class YoutubeDownloader
 		}
 
 		$result['video_url'] = 'http://www.youtube.com/watch?v=' . $this->videoId;
+		$result['video_id'] = $this->videoId;
 
 		$result = (object) $result;
 		$this->videoInfo = $result;
@@ -212,7 +213,7 @@ class YoutubeDownloader
 	 * @param  string $file Path of file to save to
 	 * @return object       Downloaded chunk size and bytes that remain
 	 */
-	protected function downloadFile($url, $file, callable $onProgress)
+	protected function downloadFile($url, $file, \Closure $onProgress)
 	{
 		$tempFilename = $file . '_temp_' . time();
 		$options = array(
@@ -229,7 +230,7 @@ class YoutubeDownloader
 		$response = $request->send();
 
 		$size = filesize($tempFilename);
-		$remained = intval($response->headers['content-length']);
+		$remained = 0;
 
 		$fp1 = fopen($file, 'a');
 		$fp2 = fopen($tempFilename, 'r');

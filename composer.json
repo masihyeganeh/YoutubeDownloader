@@ -3,7 +3,7 @@
     "type": "library",
     "description": "Youtube video downloader",
     "keywords": ["youtube", "download", "downloader", "simple", "masih"],
-    "version": "1.2.0",
+    "version": "1.2.1",
     "homepage": "https://github.com/masihyeganeh/YoutubeDownloader",
     "license": "MIT",
 

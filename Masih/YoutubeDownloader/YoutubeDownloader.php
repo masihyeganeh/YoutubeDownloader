@@ -141,8 +141,11 @@ class YoutubeDownloader
 			$stream_maps = explode(',', $data['url_encoded_fmt_stream_map']);
 			foreach ($stream_maps as $key => $value) {
 				parse_str($value, $stream_maps[$key]);
-				$stream_maps[$key]['url'] .= '&signature=' . $stream_maps[$key]['sig'];
-				unset($stream_maps[$key]['sig']);
+				
+				if (isset($stream_maps[$key]['sig'])) {
+					$stream_maps[$key]['url'] .= '&signature=' . $stream_maps[$key]['sig'];
+					unset($stream_maps[$key]['sig']);
+				}
 
 				$typeParts = explode(';', $stream_maps[$key]['type']);
 				$stream_maps[$key]['filename'] = $filename . '.' . $this->getExtension(trim($typeParts[0]));

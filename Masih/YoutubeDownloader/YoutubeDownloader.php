@@ -6,7 +6,7 @@
  * @author Masih Yeganeh <masihyeganeh@outlook.com>
  * @package YoutubeDownloader
  *
- * @version 1.1
+ * @version 1.3
  * @license http://opensource.org/licenses/MIT MIT
  */
 
@@ -34,7 +34,7 @@ class YoutubeDownloader
 
 	/**
 	 * Web client object
-	 * @var \Guzzle\Http\Client
+	 * @var \GuzzleHttp\Client
 	 */
 	protected $webClient;
 
@@ -58,6 +58,12 @@ class YoutubeDownloader
 	public $onProgress;
 
 	/**
+	 * Callable function that is called on download complete
+	 * @var callable
+	 */
+	public $onComplete;
+
+	/**
 	 * Instantiates a YoutubeDownloader with a random User-Agent
 	 * @param string $videoUrl Full Youtube video url or just video ID
 	 * @example var downloader = new YoutubeDownloader('gmFn62dr0D8');
@@ -66,9 +72,11 @@ class YoutubeDownloader
 	public function __construct($videoUrl)
 	{
 		$this->videoId = $this->getVideoIdFromUrl($videoUrl);
-		$this->webClient = new \Guzzle\Http\Client();
-		$this->webClient->setUserAgent(\random_uagent());
+		$this->webClient = new \GuzzleHttp\Client(array(
+			'headers' => array('User-Agent' => \random_uagent())
+		));
 
+		$this->onComplete = function ($fileSize) {};
 		$this->onProgress = function ($downloadedBytes, $fileSize) {};
 	}
 
@@ -104,8 +112,8 @@ class YoutubeDownloader
 	public function getVideoInfo()
 	{
 		$result = array();
-		$response = $this->webClient->get('http://www.youtube.com/get_video_info?el=detailpage&ps=default&eurl=&gl=US&hl=en&sts=15888&video_id=' . $this->videoId)->send();
-		if (!$response->isSuccessful())
+		$response = $this->webClient->get('http://www.youtube.com/get_video_info?el=detailpage&ps=default&eurl=&gl=US&hl=en&sts=15888&video_id=' . $this->videoId);
+		if ($response->getStatusCode() != 200)
 			throw new YoutubeException('Couldn\'t get video details.', 1);
 
 		parse_str($response->getBody(true), $data);
@@ -208,42 +216,48 @@ class YoutubeDownloader
 	 * Just downloads the given url
 	 * @param  string $url  Url of file to download
 	 * @param  string $file Path of file to save to
-	 * @return object       Downloaded chunk size and bytes that remain
 	 */
-	protected function downloadFile($url, $file, callable $onProgress)
+	protected function downloadFile($url, $file, callable $onProgress, callable $onFinish)
 	{
 		$tempFilename = $file . '_temp_' . time();
+		$tempFile = fopen($tempFilename, 'a');
 		$options = array(
-			'save_to' => fopen($tempFilename, 'a'),
+			'sink' => $tempFile,
 			'verify' => false,
 			'timeout' => 0,
 			'connect_timeout' => 50,
-			'cookies' => array('url=http://www.youtube.com/watch?v=' . $this->videoId)
+			'progress' => $onProgress,
+			'cookies' => new \GuzzleHttp\Cookie\CookieJar(false, [['url' => 'http://www.youtube.com/watch?v=' . $this->videoId]])
 		);
 
-		$request = $this->webClient->get($url, array(), $options);
-		$request->getCurlOptions()->set('progress', true);
-		$request->getEventDispatcher()->addListener('curl.callback.progress', $onProgress);
-		$response = $request->send();
+		$request = new \GuzzleHttp\Psr7\Request('get', $url);
+    	$promise = $this->webClient->sendAsync($request, $options);
+		$promise->then(
+			function (\Psr\Http\Message\ResponseInterface $response) use ($tempFile, $tempFilename, $file, $onFinish) {
+				fclose($tempFile);
 
-		$size = filesize($tempFilename);
-		$remained = intval($response->headers['content-length']);
+				$size = filesize($tempFilename);
+				$remained = intval($response->getHeader('Content-Length'));
 
-		$fp1 = fopen($file, 'a');
-		$fp2 = fopen($tempFilename, 'r');
-		while (!feof($fp2)) {
-			$data = fread($fp2,1024);
-			fwrite($fp1, $data);
-		}
-		fclose($fp2);
-		fclose($fp1);
+				$fp1 = fopen($file, 'a');
+				$fp2 = fopen($tempFilename, 'r');
+				while (!feof($fp2)) {
+					$data = fread($fp2, 1024);
+					fwrite($fp1, $data);
+				}
+				fclose($fp2);
+				fclose($fp1);
 
-		unlink($tempFilename);
+				unlink($tempFilename);
 
-		return (object) array(
-			'size' => $size,
-			'remained' => $remained
+				$onFinish($size, $remained);
+			},
+			function (\GuzzleHttp\Exception\RequestException $e) {
+				echo 'Error';
+				var_dump($e);
+			}
 		);
+		$promise->wait();
 	}
 
 	/**
@@ -253,7 +267,6 @@ class YoutubeDownloader
 	 * 
 	 * @param  int  $itag   After calling {@see getVideoInfo()}, it returns various formats, each format has it's own itag. if no itag is passed, it will download the best quality of video
 	 * @param  boolean $resume If it should resume download if an uncompleted file exists or should download from begining
-	 * @return object       Downloaded chunk size and bytes that remain
 	 */
 	public function download($itag=null, $resume=false)
 	{
@@ -279,7 +292,7 @@ class YoutubeDownloader
 
 		foreach ($this->videoInfo->adaptive_formats as $video) {
 			if ($video->itag == $itag)
-				return $this->downloadAdaptive($video->url, $video->filename, $resume);
+				return $this->downloadAdaptive($video->url, $video->filename, $video->clen, $resume);
 		}
 	}
 
@@ -288,7 +301,6 @@ class YoutubeDownloader
 	 * @param  string  $url    Video url given by {@see getVideoInfo()}
 	 * @param  string  $file   Path of file to save to
 	 * @param  boolean $resume If it should resume download if an uncompleted file exists or should download from begining
-	 * @return object          Downloaded chunk size and bytes that remain
 	 */
 	public function downloadFull($url, $file, $resume=false)
 	{
@@ -299,26 +311,33 @@ class YoutubeDownloader
 		$downloadedBytes = &$this->downloadedBytes;
 		$fileSize = &$this->fileSize;
 		$onProgress = &$this->onProgress;
+		$onComplete = &$this->onComplete;
 
-		return $this->downloadFile($url, $file, function (\Guzzle\Common\Event $e) use ($downloadedBytes, $fileSize, $onProgress) {
-			if (!$e['downloaded'] && !$e['download_size']) return;
-			if ($downloadedBytes != $e['downloaded'])
-				$onProgress($e['downloaded'], $e['download_size']);
+		$this->downloadFile(
+			$url, $file,
+			function ($downloadSize, $downloaded, $uploadSize, $uploaded) use ($downloadedBytes, $fileSize, $onProgress) {
+				if (!$downloaded && !$downloadSize) return;
+				if ($downloadedBytes != $downloaded)
+					$onProgress($downloaded, $downloadSize);
 
-			$downloadedBytes = $e['downloaded'];
-			$fileSize = $e['download_size'];
-		});
+				$downloadedBytes = $downloaded;
+				$fileSize = $downloadSize;
+				return 0;
+			},
+			function ($downloadSize, $downloaded) use ($onComplete) {
+				$onComplete($downloadSize);
+			}
+		);
 	}
 
 	/**
 	 * Downloads adaptive_formats videos given by {@see getVideoInfo()}. in adaptive formats, video and voice are separated.
 	 * @param  string  $url           Resource url given by {@see getVideoInfo()}
 	 * @param  string  $file          Path of file to save to
+	 * @param  integer $completeSize  Completed file size
 	 * @param  boolean $resume        If it should resume download if an uncompleted file exists or should download from begining
-	 * @param  integer $maxPartsCount Adaptive formats are not in one piece. It's a good idea to set a max pieces count to avoid unlimited loop
-	 * @return object                 Downloaded chunk size and bytes that remain
 	 */
-	public function downloadAdaptive($url, $file, $resume=false, $maxPartsCount=1024)
+	public function downloadAdaptive($url, $file, $completeSize, $resume=false)
 	{
 		$file = $this->path . DIRECTORY_SEPARATOR . $file;
 
@@ -334,31 +353,32 @@ class YoutubeDownloader
 		$downloadedBytes = &$this->downloadedBytes;
 		$fileSize = &$this->fileSize;
 		$onProgress = &$this->onProgress;
+		$onComplete = &$this->onComplete;
 
-		$tries = 0;
-		while ($tries++ < $maxPartsCount)
+
+		while ($size < $completeSize)
 		{
-			$download = $this->downloadFile($url . '&range=' . $size . '-', $file, function (\Guzzle\Common\Event $e) use ($downloadedBytes, $fileSize, $onProgress)  {
-			if (!$e['downloaded'] && !$e['download_size']) return;
-			if ($downloadedBytes != $e['downloaded'])
-				$onProgress($e['downloaded'], $e['download_size']);
+			$this->downloadFile(
+				$url . '&range=' . $size . '-' . $completeSize, $file,
+				function ($downloadSize, $downloaded, $uploadSize, $uploaded) use ($downloadedBytes, $fileSize, $onProgress)  {
+					if (!$downloaded && !$downloadSize) return;
+					if ($downloadedBytes != $downloaded)
+						$onProgress($downloaded, $downloadSize);
 
-			$downloadedBytes = $e['downloaded'];
-			$fileSize = $e['download_size'];
-		});
+					$downloadedBytes = $downloaded;
+					$fileSize = $downloadSize;
 
-			if ($download->remained <= 0)
-				break;
+					return 0;
+				},
+				function ($downloadSize, $downloaded) use (&$size) {
+					$size += $downloadSize;
+				}
+			);
 
-			$size += $download->size;
-			
 			// Maybe we need to refresh download link each time
 		}
 
-		return (object) array(
-			'size' => $size,
-			'remained' => $download->remained
-		);
+		$onComplete($size);
 	}
 
 	/**

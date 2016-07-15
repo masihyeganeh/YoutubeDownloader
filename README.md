@@ -4,11 +4,12 @@ Youtube Downloader
 Youtube video downloader
 
 [![Build Status](https://travis-ci.org/masihyeganeh/YoutubeDownloader.png)](https://travis-ci.org/masihyeganeh/YoutubeDownloader)
-[![Latest Stable Version](https://poser.pugx.org/masih/googleplay/v/stable.png)](https://packagist.org/packages/masih/googleplay)
-[![Latest Unstable Version](https://poser.pugx.org/masih/googleplay/v/unstable.png)](https://packagist.org/packages/masih/googleplay)
-[![Coverage Status](https://coveralls.io/repos/masihyeganeh/YoutubeDownloader/badge.png)](https://coveralls.io/r/masihyeganeh/YoutubeDownloader)
-[![Total Downloads](https://poser.pugx.org/masih/googleplay/downloads.png)](https://packagist.org/packages/masih/googleplay)
-[![Dependency Status](https://www.versioneye.com/user/projects/5281d3db632baca88e000127/badge.png)](https://www.versioneye.com/user/projects/5281d3db632baca88e000127)
+[![Latest Stable Version](https://poser.pugx.org/masih/youtubedownloader/v/stable)](https://packagist.org/packages/masih/youtubedownloader)
+[![Latest Unstable Version](https://poser.pugx.org/masih/youtubedownloader/v/unstable)](https://packagist.org/packages/masih/youtubedownloader)
+[![Coverage Status](https://coveralls.io/repos/github/masihyeganeh/YoutubeDownloader/badge.svg?branch=master)](https://coveralls.io/github/masihyeganeh/YoutubeDownloader?branch=master)
+[![Total Downloads](https://poser.pugx.org/masih/youtubedownloader/downloads)](https://packagist.org/packages/masih/youtubedownloader)
+[![Dependency Status](https://www.versioneye.com/user/projects/5281d3db632baca88e000127/badge.svg)](https://www.versioneye.com/user/projects/5281d3db632baca88e000127)
+[![License](https://poser.pugx.org/masih/youtubedownloader/license)](https://packagist.org/packages/masih/youtubedownloader)
 
 
 Installation
@@ -18,12 +19,14 @@ Youtube Downloader is PSR-0 compliant and can be installed using [composer](http
 ```json
     {
         "require": {
-            "masih/youtubedownloader": "*"
+            "masih/youtubedownloader": "1.*"
         }
     }
 ```
 
 and run `composer update` command
+
+Needs PHP 5.5 or newer
 
 Usage
 -----
@@ -84,14 +87,35 @@ $youtube = new YoutubeDownloader('gmFn62dr0D8');
 
 
 $youtube->onProgress = function ($downloadedBytes, $fileSize) {
-	echo 'Downloaded '$downloadedBytes . ' of ' . $fileSize . ' bytes.' . "\n";
+	if ($fileSize > 0)
+		echo 'Downloaded ' . $downloadedBytes . ' of ' . $fileSize . ' bytes [%' . number_format($downloadedBytes * 100 / $fileSize, 2) . '].' . "\n";
+	else
+		echo 'Downloading...'; // File size is unknown, so just keep downloading
+};
+
+
+$youtube->download();
+```
+   
+### Download complete
+
+Download complete event is available via `onProgress` parameter.
+it's a closure and has one parameter `$fileSize`.
+
+```php
+<?php
+$youtube = new YoutubeDownloader('gmFn62dr0D8');
+
+
+$youtube->onComplete = function ($fileSize) {
+	echo 'Downloading of ' . $fileSize . ' bytes has been completed.' . "\n";
 };
 
 
 $youtube->download();
 ```
 
-
+   
 License
 -------
 

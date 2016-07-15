@@ -26,7 +26,7 @@ Youtube Downloader is PSR-0 compliant and can be installed using [composer](http
 
 and run `composer update` command
 
-Needs PHP 5.5 or newer
+Needs PHP 5.5 or newer. Tested with PHP 5.5, 5.6, 7.0, hhvm and nightly
 
 Usage
 -----

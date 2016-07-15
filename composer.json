@@ -22,7 +22,7 @@
         "php": ">=5.5.0",
         "guzzlehttp/guzzle": "~6.0",
         "dflydev/apache-mime-types": "1.0.*",
-        "mwhite/random-uagent": "dev-master"
+        "campo/random-user-agent": "~1.1.0"
     },
 
     "require-dev": {

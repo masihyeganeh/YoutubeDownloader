@@ -73,7 +73,7 @@ class YoutubeDownloader
 	{
 		$this->videoId = $this->getVideoIdFromUrl($videoUrl);
 		$this->webClient = new \GuzzleHttp\Client(array(
-			'headers' => array('User-Agent' => \random_uagent())
+			'headers' => array('User-Agent' => \Campo\UserAgent::random())
 		));
 
 		$this->onComplete = function ($fileSize) {};

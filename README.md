@@ -19,7 +19,7 @@ Youtube Downloader is PSR-0 compliant and can be installed using [composer](http
 ```json
     {
         "require": {
-            "masih/youtubedownloader": "~1.4"
+            "masih/youtubedownloader": "~1.5"
         }
     }
 ```

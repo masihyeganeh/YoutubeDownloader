@@ -12,6 +12,15 @@
 
 namespace Masih\YoutubeDownloader;
 
+use Campo\UserAgent;
+use Dflydev\ApacheMimeTypes\FlatRepository;
+use GuzzleHttp\Client;
+use GuzzleHttp\Cookie\CookieJar;
+use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Psr7\Request;
+use Psr\Http\Message\ResponseInterface;
+
 class YoutubeDownloader
 {
 	/**
@@ -34,7 +43,7 @@ class YoutubeDownloader
 
 	/**
 	 * Web client object
-	 * @var \GuzzleHttp\Client
+	 * @var Client
 	 */
 	protected $webClient;
 
@@ -72,11 +81,11 @@ class YoutubeDownloader
 	public function __construct($videoUrl)
 	{
 		$this->videoId = $this->getVideoIdFromUrl($videoUrl);
-		$this->webClient = new \GuzzleHttp\Client(array(
-			'headers' => array('User-Agent' => \Campo\UserAgent::random())
+		$this->webClient = new Client(array(
+			'headers' => array('User-Agent' => UserAgent::random())
 		));
 
-		$this->onComplete = function ($fileSize) {};
+		$this->onComplete = function ($filePath, $fileSize) {};
 		$this->onProgress = function ($downloadedBytes, $fileSize) {};
 	}
 
@@ -106,17 +115,26 @@ class YoutubeDownloader
 	 * Gets informations of Youtube video
 	 *
 	 * @throws YoutubeException If Video ID is wrong or video not exists anymore or it's not viewable anyhow
-	 * 
+	 *
 	 * @return object Video's title, images, video length, download links, ...
 	 */
 	public function getVideoInfo()
 	{
 		$result = array();
-		$response = $this->webClient->get('http://www.youtube.com/get_video_info?el=detailpage&ps=default&eurl=&gl=US&hl=en&sts=15888&video_id=' . $this->videoId);
+
+		try {
+			$response = $this->webClient->get('http://www.youtube.com/get_video_info?el=detailpage&ps=default&eurl=&gl=US&hl=en&sts=15888&video_id=' . $this->videoId);
+		} catch (GuzzleException $e) {
+			if ($e instanceof ClientException && $e->hasResponse())
+				throw new YoutubeException($e->getResponse()->getReasonPhrase(), 3);
+			else
+				throw new YoutubeException($e->getMessage(), 3);
+		}
+
 		if ($response->getStatusCode() != 200)
 			throw new YoutubeException('Couldn\'t get video details.', 1);
 
-		parse_str($response->getBody(true), $data);
+		parse_str($response->getBody(), $data);
 		if (isset($data['status']) && $data['status'] == 'fail')
 			throw new YoutubeException($data['reason'], $data['errorcode']);
 
@@ -149,7 +167,7 @@ class YoutubeDownloader
 			$stream_maps = explode(',', $data['url_encoded_fmt_stream_map']);
 			foreach ($stream_maps as $key => $value) {
 				parse_str($value, $stream_maps[$key]);
-				
+
 				if (isset($stream_maps[$key]['sig'])) {
 					$stream_maps[$key]['url'] .= '&signature=' . $stream_maps[$key]['sig'];
 					unset($stream_maps[$key]['sig']);
@@ -186,7 +204,7 @@ class YoutubeDownloader
 	 * Removes unsafe characters from file name
 	 * @param  string $string Path unsafe file name
 	 * @return string         Path Safe file name
-	 * 
+	 *
 	 * @todo Use .net framework's Path.GetInvalidPathChars() for a better function
 	 */
 	protected function pathSafeFilename($string)
@@ -203,7 +221,7 @@ class YoutubeDownloader
 	 */
 	protected function getExtension($mimetype)
 	{
-		$mime = new \Dflydev\ApacheMimeTypes\FlatRepository;
+		$mime = new FlatRepository;
 		$extension = 'mp4';
 		$extensions = $mime->findExtensions($mimetype);
 		if (count($extensions))
@@ -214,8 +232,10 @@ class YoutubeDownloader
 
 	/**
 	 * Just downloads the given url
-	 * @param  string $url  Url of file to download
-	 * @param  string $file Path of file to save to
+	 * @param  string   $url Url of file to download
+	 * @param  string   $file Path of file to save to
+	 * @param  callable $onProgress Callback to be called on download progress
+	 * @param  callable $onFinish Callback to be called on download complete
 	 */
 	protected function downloadFile($url, $file, callable $onProgress, callable $onFinish)
 	{
@@ -227,18 +247,19 @@ class YoutubeDownloader
 			'timeout' => 0,
 			'connect_timeout' => 50,
 			'progress' => $onProgress,
-			'cookies' => new \GuzzleHttp\Cookie\CookieJar(false, [['url' => 'http://www.youtube.com/watch?v=' . $this->videoId]])
+			'cookies' => new CookieJar(false, [['url' => 'http://www.youtube.com/watch?v=' . $this->videoId]])
 		);
 
-		$request = new \GuzzleHttp\Psr7\Request('get', $url);
+		$request = new Request('get', $url);
     	$promise = $this->webClient->sendAsync($request, $options);
 		$promise->then(
-			function (\Psr\Http\Message\ResponseInterface $response) use ($tempFile, $tempFilename, $file, $onFinish) {
+			function (ResponseInterface $response) use ($tempFile, $tempFilename, $file, $onFinish) {
 				fclose($tempFile);
 
 				$size = filesize($tempFilename);
-				$remained = intval($response->getHeader('Content-Length'));
+				$remained = intval((string)$response->getHeader('Content-Length')[0]);
 
+				// Appending downloaded file to existing one (Continuing uncomplete files)
 				$fp1 = fopen($file, 'a');
 				$fp2 = fopen($tempFilename, 'r');
 				while (!feof($fp2)) {
@@ -252,9 +273,11 @@ class YoutubeDownloader
 
 				$onFinish($size, $remained);
 			},
-			function (\GuzzleHttp\Exception\RequestException $e) {
-				echo 'Error';
-				var_dump($e);
+			function (GuzzleException $e) {
+				if ($e instanceof ClientException && $e->hasResponse())
+					throw new YoutubeException($e->getResponse()->getReasonPhrase(), 4);
+				else
+					throw new YoutubeException($e->getMessage(), 4);
 			}
 		);
 		$promise->wait();
@@ -264,7 +287,7 @@ class YoutubeDownloader
 	 * Downloads video format by given itag
 	 *
 	 * @throws YoutubeException If Video ID is wrong or video not exists anymore or it's not viewable anyhow
-	 * 
+	 *
 	 * @param  int  $itag   After calling {@see getVideoInfo()}, it returns various formats, each format has it's own itag. if no itag is passed, it will download the best quality of video
 	 * @param  boolean $resume If it should resume download if an uncompleted file exists or should download from begining
 	 */
@@ -282,17 +305,22 @@ class YoutubeDownloader
 		if (is_null($itag))
 		{
 			$video = $this->videoInfo->full_formats[0];
-			return $this->downloadFull($video->url, $video->filename, $resume);
+			$this->downloadFull($video->url, $video->filename, $resume);
+			return;
 		}
 
 		foreach ($this->videoInfo->full_formats as $video) {
-			if ($video->itag == $itag)
-				return $this->downloadFull($video->url, $video->filename, $resume);
+			if ($video->itag == $itag) {
+				$this->downloadFull($video->url, $video->filename, $resume);
+				return;
+			}
 		}
 
 		foreach ($this->videoInfo->adaptive_formats as $video) {
-			if ($video->itag == $itag)
-				return $this->downloadAdaptive($video->url, $video->filename, $video->clen, $resume);
+			if ($video->itag == $itag) {
+				$this->downloadAdaptive($video->url, $video->filename, $video->clen, $resume);
+				return;
+			}
 		}
 	}
 
@@ -315,8 +343,8 @@ class YoutubeDownloader
 
 		$this->downloadFile(
 			$url, $file,
-			function ($downloadSize, $downloaded, $uploadSize, $uploaded) use ($downloadedBytes, $fileSize, $onProgress) {
-				if (!$downloaded && !$downloadSize) return;
+			function ($downloadSize, $downloaded) use ($downloadedBytes, $fileSize, $onProgress) {
+				if (!$downloaded && !$downloadSize) return 1;
 				if ($downloadedBytes != $downloaded)
 					$onProgress($downloaded, $downloadSize);
 
@@ -324,8 +352,8 @@ class YoutubeDownloader
 				$fileSize = $downloadSize;
 				return 0;
 			},
-			function ($downloadSize, $downloaded) use ($onComplete) {
-				$onComplete($downloadSize);
+			function ($downloadSize) use ($onComplete, $file) {
+				$onComplete($file, $downloadSize);
 			}
 		);
 	}
@@ -360,8 +388,8 @@ class YoutubeDownloader
 		{
 			$this->downloadFile(
 				$url . '&range=' . $size . '-' . $completeSize, $file,
-				function ($downloadSize, $downloaded, $uploadSize, $uploaded) use ($downloadedBytes, $fileSize, $onProgress)  {
-					if (!$downloaded && !$downloadSize) return;
+				function ($downloadSize, $downloaded) use ($downloadedBytes, $fileSize, $onProgress)  {
+					if (!$downloaded && !$downloadSize) return 1;
 					if ($downloadedBytes != $downloaded)
 						$onProgress($downloaded, $downloadSize);
 
@@ -370,7 +398,7 @@ class YoutubeDownloader
 
 					return 0;
 				},
-				function ($downloadSize, $downloaded) use (&$size) {
+				function ($downloadSize) use (&$size) {
 					$size += $downloadSize;
 				}
 			);
@@ -378,7 +406,7 @@ class YoutubeDownloader
 			// Maybe we need to refresh download link each time
 		}
 
-		$onComplete($size);
+		$onComplete($file, $size);
 	}
 
 	/**

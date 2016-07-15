@@ -6,16 +6,16 @@ use \Masih\YoutubeDownloader\YoutubeDownloader;
 
 $youtube = new YoutubeDownloader('gmFn62dr0D8');
 
-// $result = $youtube->getVideoInfo();
-// header('Content-type: application/json');
-// print json_encode($result);
+$result = $youtube->getVideoInfo();
+header('Content-type: application/json');
+print json_encode($result);
 
 
 // Uncomment lines below to test downloding video
 
 
-// $youtube->onComplete = function ($fileSize) {
-// 	echo 'Downloading of ' . $fileSize . ' bytes has been completed.' . "\n";
+// $youtube->onComplete = function ($filePath, $fileSize) {
+// 	echo 'Downloading of ' . $fileSize . ' bytes has been completed. It is saved in ' . $filePath . "\n";
 // };
 
 // $youtube->onProgress = function ($downloadedBytes, $fileSize) {

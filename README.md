@@ -3,7 +3,7 @@ Youtube Downloader
 
 Youtube video downloader
 
-[![Build Status](https://travis-ci.org/masihyeganeh/YoutubeDownloader.png)](https://travis-ci.org/masihyeganeh/YoutubeDownloader)
+[![Build Status](https://travis-ci.org/masihyeganeh/YoutubeDownloader.svg?branch=master)](https://travis-ci.org/masihyeganeh/YoutubeDownloader)
 [![Latest Stable Version](https://poser.pugx.org/masih/youtubedownloader/v/stable)](https://packagist.org/packages/masih/youtubedownloader)
 [![Latest Unstable Version](https://poser.pugx.org/masih/youtubedownloader/v/unstable)](https://packagist.org/packages/masih/youtubedownloader)
 [![Coverage Status](https://coveralls.io/repos/github/masihyeganeh/YoutubeDownloader/badge.svg?branch=master)](https://coveralls.io/github/masihyeganeh/YoutubeDownloader?branch=master)
@@ -99,16 +99,16 @@ $youtube->download();
    
 ### Download complete
 
-Download complete event is available via `onProgress` parameter.
-it's a closure and has one parameter `$fileSize`.
+Download complete event is available via `onComplete` parameter.
+it's a closure and has two parameters `$filePath` and `$fileSize`.
 
 ```php
 <?php
 $youtube = new YoutubeDownloader('gmFn62dr0D8');
 
 
-$youtube->onComplete = function ($fileSize) {
-	echo 'Downloading of ' . $fileSize . ' bytes has been completed.' . "\n";
+$youtube->onComplete = function ($filePath, $fileSize) {
+	echo 'Downloading of ' . $fileSize . ' bytes has been completed. It is saved in ' . $filePath . "\n";
 };
 
 

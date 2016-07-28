@@ -6,7 +6,7 @@
  * @author Masih Yeganeh <masihyeganeh@outlook.com>
  * @package YoutubeDownloader
  *
- * @version 1.5
+ * @version 1.6
  * @license http://opensource.org/licenses/MIT MIT
  */
 
@@ -123,6 +123,8 @@ class YoutubeDownloader
 		$result = array();
 
 		try {
+			// TODO: Check this
+			// $response = $this->webClient->get('https://www.youtube.com/get_video_info?&asv=3&el=detailpage&hl=en_USvideo_id=' . $this->videoId);
 			$response = $this->webClient->get('http://www.youtube.com/get_video_info?el=detailpage&ps=default&eurl=&gl=US&hl=en&sts=15888&video_id=' . $this->videoId);
 		} catch (GuzzleException $e) {
 			if ($e instanceof ClientException && $e->hasResponse())
@@ -146,6 +148,7 @@ class YoutubeDownloader
 			'standard' => 'http://i1.ytimg.com/vi/' . $this->videoId . '/sddefault.jpg',
 			'thumbnails' => array(
 				'http://i1.ytimg.com/vi/' . $this->videoId . '/default.jpg',
+				'http://i1.ytimg.com/vi/' . $this->videoId . '/0.jpg',
 				'http://i1.ytimg.com/vi/' . $this->videoId . '/1.jpg',
 				'http://i1.ytimg.com/vi/' . $this->videoId . '/2.jpg',
 				'http://i1.ytimg.com/vi/' . $this->videoId . '/3.jpg'
@@ -155,7 +158,7 @@ class YoutubeDownloader
 
 		$filename = $this->pathSafeFilename($result['title']);
 
-		if (isset($data['ps']) && $data['ps']='live')
+		if (isset($data['ps']) && $data['ps'] == 'live')
 		{
 			if (!isset($data['hlsvp']))
 				throw new YoutubeException('This live event is over.', 2);

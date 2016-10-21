@@ -2,7 +2,7 @@
     "name": "masih/youtubedownloader",
     "type": "library",
     "description": "Youtube video downloader",
-    "keywords": ["youtube", "download", "downloader", "simple", "masih"],
+    "keywords": ["youtube", "download", "downloader", "simple", "masih", "vevo"],
     "homepage": "https://github.com/masihyeganeh/YoutubeDownloader",
     "license": "MIT",
 

@@ -152,10 +152,11 @@ class YoutubeDownloader
 	 */
 	public function getItagInfo($itag)
 	{
-		$itags = $this->getItags();
+		$itag = '' . $itag;
+        $itags = $this->getItags();
 
 		if (property_exists($itags, $itag))
-			return $itag[$itag];
+			return $itags->$itag;
 
 		return null;
 	}

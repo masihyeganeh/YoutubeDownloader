@@ -6,7 +6,7 @@
  * @author Masih Yeganeh <masihyeganeh@outlook.com>
  * @package YoutubeDownloader
  *
- * @version 2.0
+ * @version 2.1
  * @license http://opensource.org/licenses/MIT MIT
  */
 
@@ -173,7 +173,7 @@ class YoutubeDownloader
 
 		if (isset($urlPart['query']))
 		{
-			parse_str($urlPart['query'], $query);
+			$query = $this->decodeString($urlPart['query']);
 
 			if (isset($query['list']))
 				$playlistId = $query['list'];
@@ -204,7 +204,7 @@ class YoutubeDownloader
 				$videoId = $temp[1];
 			elseif (preg_match('/\/watch/i', $path, $temp) && isset($urlPart['query']))
 			{
-				parse_str($urlPart['query'], $query);
+				$query = $this->decodeString($urlPart['query']);
 				$videoId = $query['v'];
 			}
 		}
@@ -279,6 +279,18 @@ class YoutubeDownloader
 	}
 
 	/**
+	 * Decodes URL encoded string
+	 *
+	 * @param  string $input URL encoded string
+	 * @return string           decoded string
+	 */
+	protected function decodeString($input)
+	{
+		parse_str($input, $result);
+		return $result;
+	}
+
+	/**
 	 * Gets information of Youtube video
 	 *
 	 * @throws YoutubeException If Video ID is wrong or video not exists anymore or it's not viewable anyhow
@@ -298,7 +310,7 @@ class YoutubeDownloader
 		if ($response->getStatusCode() != 200)
 			throw new YoutubeException('Couldn\'t get video details.', 1);
 
-		parse_str($response->getBody(), $data);
+		$data = $this->decodeString($response->getBody());
 		if (isset($data['status']) && $data['status'] == 'fail')
 		{
 			if ($data['errorcode'] == '150') {
@@ -350,7 +362,7 @@ class YoutubeDownloader
 		{
 			$stream_maps = explode(',', $data['url_encoded_fmt_stream_map']);
 			foreach ($stream_maps as $key => $value) {
-				parse_str($value, $stream_maps[$key]);
+				$stream_maps[$key] = $this->decodeString($value);
 
 				if (isset($stream_maps[$key]['sig'])) {
 					$stream_maps[$key]['url'] .= '&signature=' . $stream_maps[$key]['sig'];
@@ -367,7 +379,7 @@ class YoutubeDownloader
 
 			$adaptive_fmts = explode(',', $data['adaptive_fmts']);
 			foreach ($adaptive_fmts as $key => $value) {
-				parse_str($value, $adaptive_fmts[$key]);
+				$adaptive_fmts[$key] = $this->decodeString($value);
 
 				$typeParts = explode(';', $adaptive_fmts[$key]['type']);
 				// TODO: Use container of known itags as extension here
@@ -412,7 +424,7 @@ class YoutubeDownloader
 	 */
 	protected function parseCaption($captionTrack)
 	{
-		parse_str($captionTrack, $captionTrackData);
+		$captionTrackData = $this->decodeString($captionTrack);
 		if (!isset($captionTrackData['u'])) return null;
 
 		try {
@@ -621,8 +633,8 @@ class YoutubeDownloader
 				$fileSize = $downloadSize;
 				return 0;
 			},
-			function ($downloadSize) use ($onComplete, $file) {
-				$onComplete($file, $downloadSize);
+			function ($downloadSize) use ($onComplete, $file, $videosCount) {
+				$onComplete($file, $downloadSize, $this->currentDownloadingVideoIndex, $videosCount);
 			}
 		);
 	}
@@ -675,7 +687,7 @@ class YoutubeDownloader
 			// Maybe we need to refresh download link each time
 		}
 
-		$onComplete($file, $size);
+		$onComplete($file, $size, $this->currentDownloadingVideoIndex, $videosCount);
 	}
 
 	/**

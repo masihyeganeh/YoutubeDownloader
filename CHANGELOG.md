@@ -1,6 +1,14 @@
 Changelog
 =========
 
+2.1
+-----
+
+*Date: 2016-11-05*
+
+* onComplete bug fixed
+* prepared for next release
+
 2.0
 -----
 

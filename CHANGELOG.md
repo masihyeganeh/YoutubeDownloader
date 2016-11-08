@@ -1,13 +1,25 @@
 Changelog
 =========
 
+2.5
+-----
+
+*Date: 2016-11-08*
+
+* Captions can be downloaded in srt, sub and ass format now
+* CLI added
+* Ability to define default itag, caption language and caption format added
+* getItags() method is now static
+* Exception handling improved
+* Some bugs fixed
+
 2.1
 -----
 
 *Date: 2016-11-05*
 
 * onComplete bug fixed
-* prepared for next release
+* Prepared for next release
 
 2.0
 -----

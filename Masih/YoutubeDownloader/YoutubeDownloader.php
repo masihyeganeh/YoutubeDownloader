@@ -6,7 +6,7 @@
  * @author Masih Yeganeh <masihyeganeh@outlook.com>
  * @package YoutubeDownloader
  *
- * @version 2.1
+ * @version 2.5
  * @license http://opensource.org/licenses/MIT MIT
  */
 
@@ -66,6 +66,24 @@ class YoutubeDownloader
 	protected $itags = null;
 
 	/**
+	 * Default itag number if user not specified any
+	 * @var integer
+	 */
+	protected $defaultItag = null;
+
+	/**
+	 * Default caption if user not specified any
+	 * @var string
+	 */
+	protected $defaultCaptionLanguage = 'en';
+
+	/**
+	 * Default caption format
+	 * @var string
+	 */
+	protected $captionFormat = 'srt';
+
+	/**
 	 * Path to save videos (without ending slash)
 	 * @var string
 	 */
@@ -104,16 +122,17 @@ class YoutubeDownloader
 
 	/**
 	 * Instantiates a YoutubeDownloader with a random User-Agent
+	 *
 	 * @param  string $videoUrl Full Youtube video url or just video ID
 	 * @example var downloader = new YoutubeDownloader('gmFn62dr0D8');
 	 * @example var downloader = new YoutubeDownloader('http://www.youtube.com/watch?v=gmFn62dr0D8');
 	 * @example var downloader = new YoutubeDownloader('http://www.youtube.com/embed/gmFn62dr0D8');
 	 * @example var downloader = new YoutubeDownloader('http://www.youtube.com/v/gmFn62dr0D8');
 	 * @example var downloader = new YoutubeDownloader('http://youtu.be/gmFn62dr0D8');
-	 * @example var downloader = new YoutubeDownloader('PLbjM1u8Yb9I043pxcgwtv3KY9_6iL-Dsd');
-	 * @example var downloader = new YoutubeDownloader('https://www.youtube.com/watch?v=7gY_sq9uOmw&list=PLbjM1u8Yb9I043pxcgwtv3KY9_6iL-Dsd');
-	 * @example var downloader = new YoutubeDownloader('https://www.youtube.com/playlist?list=PLbjM1u8Yb9I043pxcgwtv3KY9_6iL-Dsd');
-	 * @example var downloader = new YoutubeDownloader('https://www.youtube.com/embed/videoseries?list=PLbjM1u8Yb9I043pxcgwtv3KY9_6iL-Dsd');
+	 * @example var downloader = new YoutubeDownloader('PLbjM1u8Yb9I0rK4hkPa9TWe4N_idJOnrJ');
+	 * @example var downloader = new YoutubeDownloader('https://www.youtube.com/watch?v=7gY_sq9uOmw&list=PLbjM1u8Yb9I0rK4hkPa9TWe4N_idJOnrJ');
+	 * @example var downloader = new YoutubeDownloader('https://www.youtube.com/playlist?list=PLbjM1u8Yb9I0rK4hkPa9TWe4N_idJOnrJ');
+	 * @example var downloader = new YoutubeDownloader('https://www.youtube.com/embed/videoseries?list=PLbjM1u8Yb9I0rK4hkPa9TWe4N_idJOnrJ');
 	 */
 	public function __construct($videoUrl)
 	{
@@ -135,25 +154,24 @@ class YoutubeDownloader
 
 	/**
 	 * Returns information about known itags
+	 *
 	 * @return object           known itags information
 	 */
-	public function getItags()
+	static public function getItags()
 	{
-		if ($this->itags === null)
-			$this->itags = json_decode(file_get_contents(dirname(__FILE__) . DIRECTORY_SEPARATOR . 'itags.json'));
-
-		return $this->itags;
+		return json_decode(file_get_contents(dirname(__FILE__) . DIRECTORY_SEPARATOR . 'itags.json'));
 	}
 
 	/**
 	 * Gets information about a given itag
+	 *
 	 * @param  int $itag Itag identifier
 	 * @return object           Information about itag or null if itag id is unknown
 	 */
 	public function getItagInfo($itag)
 	{
 		$itag = '' . $itag;
-        $itags = $this->getItags();
+		$itags = $this->getItags();
 
 		if (property_exists($itags, $itag))
 			return $itags->$itag;
@@ -163,6 +181,7 @@ class YoutubeDownloader
 
 	/**
 	 * Cuts playlist id from absolute Youtube playlist url
+	 *
 	 * @param  string $playlistUrl Full Youtube playlist url
 	 * @return string           Playlist ID
 	 */
@@ -186,6 +205,7 @@ class YoutubeDownloader
 
 	/**
 	 * Cuts video id from absolute Youtube or youtu.be video url
+	 *
 	 * @param  string $videoUrl Full Youtube or youtu.be video url
 	 * @return string           Video ID
 	 */
@@ -244,7 +264,7 @@ class YoutubeDownloader
 			foreach ($playlistInfo->video as &$video)
 			{
 				$this->videoId = $video->encrypted_id;
-				$videoInfo = $this->getVideoInfo();
+				$videoInfo = $this->getVideoInfo(true);
 				$video->image = $videoInfo->image;
 				$video->full_formats = $videoInfo->full_formats;
 				$video->adaptive_formats = $videoInfo->adaptive_formats;
@@ -295,9 +315,10 @@ class YoutubeDownloader
 	 *
 	 * @throws YoutubeException If Video ID is wrong or video not exists anymore or it's not viewable anyhow
 	 *
+	 * @param  bool $detailed Show more detailed information
 	 * @return object           Video's title, images, video length, download links, ...
 	 */
-	public function getVideoInfo()
+	public function getVideoInfo($detailed=false)
 	{
 		$result = array();
 
@@ -348,6 +369,8 @@ class YoutubeDownloader
 			)
 		);
 		$result['length_seconds'] = $data['length_seconds'];
+
+		$result['captions'] = ($data['has_cc'] === 'True' ? $this->getCaptions($data, $detailed) : array());
 
 		$filename = $this->pathSafeFilename($result['title']);
 
@@ -410,25 +433,59 @@ class YoutubeDownloader
 	 */
 	public function getInfo($getDownloadLinksForPlaylist=false)
 	{
-		if ($this->isPlaylist)
-			return $this->getPlaylistInfo($getDownloadLinksForPlaylist);
-		return $this->getVideoInfo();
+		try {
+			if ($this->isPlaylist)
+				return $this->getPlaylistInfo($getDownloadLinksForPlaylist);
+			return $this->getVideoInfo();
+		} catch (YoutubeException $e) {
+			throw $e;
+		}
 	}
 
 	/**
 	 * Gets caption of Youtube video and returns it as an object
 	 *
-	 * @param  string $captionTrack Caption track in video info
-	 * @return object           Caption as an object
+	 * @param  array $videoInfo Parsed video info sent by Youtube
+	 * @param  bool $detailed Caption track in video info
+	 * @return array Captions list
+	 */
+	protected function getCaptions($videoInfo, $detailed=false) {
+		$index = 0;
+		$captions = array();
+		$captionTracks = explode(',', $videoInfo['caption_tracks']);
+
+		foreach($captionTracks as $captionTrack) {
+			$decodedTrack = $this->decodeString($captionTrack);
+
+			$language = $index++;
+
+			if (isset($decodedTrack['lc']))
+				$language = $decodedTrack['lc'];
+
+			if (isset($decodedTrack['v']) && $decodedTrack['v'][0] != '.')
+				$language = $decodedTrack['v'];
+
+			if ($detailed)
+				$captions[$language] = $decodedTrack;
+			else
+				$captions[$language] = $decodedTrack['n'];
+		}
+
+		return $captions;
+	}
+
+	/**
+	 * Gets caption of Youtube video and returns it as an object
 	 *
+	 * @param  string $captionTrack Detailed caption track
+	 * @return object           Caption as an object
 	 */
 	protected function parseCaption($captionTrack)
 	{
-		$captionTrackData = $this->decodeString($captionTrack);
-		if (!isset($captionTrackData['u'])) return null;
+		if (!isset($captionTrack['u'])) return null;
 
 		try {
-			$response = $this->webClient->get($captionTrackData['u']);
+			$response = $this->webClient->get($captionTrack['u']);
 		} catch (GuzzleException $e) {
 			if ($e instanceof ClientException && $e->hasResponse()) {
 				throw new YoutubeException($e->getResponse()->getReasonPhrase(), 3);
@@ -440,21 +497,125 @@ class YoutubeDownloader
 		$xml = simplexml_load_string($response->getBody());
 		foreach ($xml->text as $element) {
 			$item = array();
-			$item['text'] = $element . "";
+			$item['text'] = html_entity_decode($element . "", ENT_QUOTES | ENT_XHTML);
 			$attributes = $element->attributes();
 			$item['start'] = floatval($attributes['start'] . "");
-			$item['duration'] = floatval($attributes['dur'] . "");
+			$item['duration'] = floatval(isset($attributes['dur']) ? $attributes['dur'] . "" : '1.0');
 			$item['end'] = $item['start'] + $item['duration'];
 			array_push($caption, $item);
 		}
 		$result = array();
-		$result['title'] = $captionTrackData['n'];
+		$result['title'] = $captionTrack['n'];
 		$result['caption'] = $caption;
 		return ((object) $result);
 	}
 
 	/**
+	 * Converts parsed caption track to desired caption format
+	 *
+	 * @param  array $captionLines Parsed caption
+	 * @param  integer $fps Video frame-per-second, needed for "sub" captions
+	 * @param  string $format Caption format, including "srt" (default), "sub", "ass"
+	 * @return object           Converted caption and it's file extension
+	 */
+	protected function formatCaption($captionLines, $fps=24, $format=null)
+	{
+		$result = array();
+		$result['caption'] = '';
+		$result['extension'] = 'txt';
+
+		if ($format === null) $format = $this->captionFormat;
+
+		if ($format == 'srt') {
+			$result['extension'] = 'srt';
+
+			$sequence = 1;
+			foreach ($captionLines as $captionLine) {
+				$start = $this->parseFloatTime($captionLine['start']);
+				$end = $this->parseFloatTime($captionLine['end']);
+
+				$result['caption'] .= ($sequence++) . "\n";
+				$result['caption'] .= str_replace('.', ',', vsprintf('%02d:%02d:%02.3f', $start)) . ' --> ';
+				$result['caption'] .= str_replace('.', ',', vsprintf('%02d:%02d:%02.3f', $end)) . "\n";
+				$result['caption'] .= $captionLine['text'] . "\n\n";
+			}
+			$result['caption'] = trim($result['caption']);
+		} elseif ($format == 'sub') {
+			$result['extension'] = 'sub';
+
+			foreach ($captionLines as $captionLine) {
+				$result['caption'] .= '{' . intval($captionLine['start'] * $fps) . '}';
+				$result['caption'] .= '{' . intval($captionLine['end'] * $fps) . '}';
+				$result['caption'] .= $captionLine['text'] . "\n";
+			}
+			$result['caption'] = trim($result['caption']);
+		} elseif ($format == 'ass') {
+			$result['extension'] = 'ass';
+			$result['caption'] = <<<EOF
+[Script Info]
+ScriptType: v4.00+
+Collisions: Normal
+PlayDepth: 0
+Timer: 100,0000
+Video Aspect Ratio: 0
+WrapStyle: 0
+ScaledBorderAndShadow: no
+
+[V4+ Styles]
+Format: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding
+Style: Default,Arial,16,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,3,0,2,10,10,10,0
+Style: Top,Arial,16,&H00F9FFFF,&H00FFFFFF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,3,0,8,10,10,10,0
+Style: Mid,Arial,16,&H0000FFFF,&H00FFFFFF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,3,0,5,10,10,10,0
+Style: Bot,Arial,16,&H00F9FFF9,&H00FFFFFF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,3,0,2,10,10,10,0
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+
+EOF;
+			foreach ($captionLines as $captionLine) {
+				$start = $this->parseFloatTime($captionLine['start']);
+				$end = $this->parseFloatTime($captionLine['end']);
+
+				$result['caption'] .= 'Dialogue: 0,';
+				$result['caption'] .= vsprintf('%d:%02d:%02.2f', $start) . ',';
+				$result['caption'] .= vsprintf('%d:%02d:%02.2f', $end) . ',Bot,,0000,0000,0000,,';
+				$result['caption'] .= $captionLine['text'] . "\n";
+			}
+		}
+
+		return ((object) $result);
+	}
+
+	/**
 	 * Removes unsafe characters from file name
+	 *
+	 * @param  array $captions Captions data of video
+	 * @param  string $language User selected language
+	 * @param  string $filename Caption file name
+	 */
+	protected function downloadCaption($captions, $language, $filename)
+	{
+		if ($language === null) $language = $this->defaultCaptionLanguage;
+		if (!array_key_exists($language, $captions))
+			$captionData = array_shift($captions);
+		else
+			$captionData = $captions[$language];
+
+		$captionData = $this->parseCaption($captionData);
+		if ($captionData !== null) {
+
+			$captionData = $this->formatCaption($captionData->caption); // TODO: Video fps is needed here
+
+			$filename = substr($filename, 0, strrpos($filename, '.')) . '.' . $captionData->extension;
+			$path = $this->path . DIRECTORY_SEPARATOR . $filename;
+
+			file_put_contents($path, $captionData->caption);
+		}
+	}
+
+	/**
+	 * Removes unsafe characters from file name
+	 *
 	 * @param  string $string Path unsafe file name
 	 * @return string         Path Safe file name
 	 *
@@ -468,6 +629,7 @@ class YoutubeDownloader
 
 	/**
 	 * Returns file extension of a given mime type
+	 *
 	 * @uses \Dflydev\ApacheMimeTypes\FlatRepository Mimetype parser library
 	 * @param  string $mimetype Mime type
 	 * @return string           File extension of given mime type. it will return "mp4" if no extension could be found
@@ -485,6 +647,7 @@ class YoutubeDownloader
 
 	/**
 	 * Just downloads the given url
+	 *
 	 * @param  string   $url Url of file to download
 	 * @param  string   $file Path of file to save to
 	 * @param  callable $onProgress Callback to be called on download progress
@@ -542,20 +705,20 @@ class YoutubeDownloader
 	 * @throws YoutubeException If Video ID is wrong or video not exists anymore or it's not viewable anyhow
 	 *
 	 * @param  int  $itag   After calling {@see getVideoInfo()}, it returns various formats, each format has it's own itag. if no itag is passed or passed itag is not valid for the video, it will download the best quality of video
-	 * @param  boolean $resume If it should resume download if an uncompleted file exists or should download from begining
+	 * @param  boolean $resume If it should resume download if an uncompleted file exists or should download from beginning
+	 * @param  mixed $caption Caption language to download or null to download caption of default language. false to prevent download
 	 */
-	public function download($itag=null, $resume=false)
+	public function download($itag=null, $resume=false, $caption=false)
 	{
+		if ($itag === null && $this->defaultItag !== null) $itag = $this->defaultItag;
 		if (!$this->isPlaylist) {
-			if (is_null($this->videoInfo)) {
-				try {
-					$this->getVideoInfo();
-				} catch (YoutubeException $e) {
-					throw $e;
-				}
+			try {
+				$this->getVideoInfo(true);
+			} catch (YoutubeException $e) {
+				throw $e;
 			}
 
-			$this->downloadVideo($itag, $resume);
+			$this->downloadVideo($itag, $resume, $caption);
 		} else {
 			$i = 1;
 			foreach ($this->playlistInfo->video as $video)
@@ -563,12 +726,12 @@ class YoutubeDownloader
 				$this->currentDownloadingVideoIndex = $i++;
 				$this->videoId = $video->encrypted_id;
 				try {
-					$this->getVideoInfo();
+					$this->getVideoInfo(true);
 				} catch (YoutubeException $e) {
 					throw $e;
 				}
 
-				$this->downloadVideo($itag, $resume);
+				$this->downloadVideo($itag, $resume, $caption);
 			}
 
 		}
@@ -580,14 +743,17 @@ class YoutubeDownloader
 	 * @throws YoutubeException If Video ID is wrong or video not exists anymore or it's not viewable anyhow
 	 *
 	 * @param  int  $itag   After calling {@see getVideoInfo()}, it returns various formats, each format has it's own itag. if no itag is passed or passed itag is not valid for the video, it will download the best quality of video
-	 * @param  boolean $resume If it should resume download if an uncompleted file exists or should download from begining
+	 * @param  boolean $resume If it should resume download if an uncompleted file exists or should download from beginning
+	 * @param  mixed $caption Caption language to download or null to download caption of default language. false to prevent download
 	 */
-	protected function downloadVideo($itag=null, $resume=false)
+	protected function downloadVideo($itag=null, $resume=false, $caption=false)
 	{
 		if ($itag) {
 			foreach ($this->videoInfo->full_formats as $video) {
 				if ($video->itag == $itag) {
 					$this->downloadFull($video->url, $video->filename, $resume);
+					if ($caption !== false && count($this->videoInfo->captions))
+						$this->downloadCaption($this->videoInfo->captions, $caption, $video->filename);
 					return;
 				}
 			}
@@ -595,6 +761,8 @@ class YoutubeDownloader
 			foreach ($this->videoInfo->adaptive_formats as $video) {
 				if ($video->itag == $itag) {
 					$this->downloadAdaptive($video->url, $video->filename, $video->clen, $resume);
+					if ($caption !== false && count($this->videoInfo->captions))
+						$this->downloadCaption($this->videoInfo->captions, $caption, $video->filename);
 					return;
 				}
 			}
@@ -602,13 +770,16 @@ class YoutubeDownloader
 
 		$video = $this->videoInfo->full_formats[0];
 		$this->downloadFull($video->url, $video->filename, $resume);
+		if ($caption !== false && count($this->videoInfo->captions))
+			$this->downloadCaption($this->videoInfo->captions, $caption, $video->filename);
 	}
 
 	/**
 	 * Downloads full_formats videos given by {@see getVideoInfo()}
+	 *
 	 * @param  string  $url    Video url given by {@see getVideoInfo()}
 	 * @param  string  $file   Path of file to save to
-	 * @param  boolean $resume If it should resume download if an uncompleted file exists or should download from begining
+	 * @param  boolean $resume If it should resume download if an uncompleted file exists or should download from beginning
 	 */
 	public function downloadFull($url, $file, $resume=false)
 	{
@@ -641,10 +812,11 @@ class YoutubeDownloader
 
 	/**
 	 * Downloads adaptive_formats videos given by {@see getVideoInfo()}. in adaptive formats, video and voice are separated.
+	 *
 	 * @param  string  $url           Resource url given by {@see getVideoInfo()}
 	 * @param  string  $file          Path of file to save to
 	 * @param  integer $completeSize  Completed file size
-	 * @param  boolean $resume        If it should resume download if an uncompleted file exists or should download from begining
+	 * @param  boolean $resume        If it should resume download if an uncompleted file exists or should download from beginning
 	 */
 	public function downloadAdaptive($url, $file, $completeSize, $resume=false)
 	{
@@ -692,10 +864,59 @@ class YoutubeDownloader
 
 	/**
 	 * Sets downloaded videos path
+	 *
 	 * @param  string $path Path to save videos (without ending slash)
 	 */
 	public function setPath($path)
 	{
 		$this->path = $path;
+	}
+
+	/**
+	 * Sets default itag
+	 *
+	 * @param  integer|string $itag Default itag number if user not specified any
+	 */
+	public function setDefaultItag($itag)
+	{
+		$this->defaultItag = (string)$itag;
+	}
+
+	/**
+	 * Sets default caption language
+	 *
+	 * @param  string $language Default caption language in 2 letters format (e.g. "en")
+	 */
+	public function setDefaultCaptionLanguage($language)
+	{
+		$this->defaultCaptionLanguage = (string)$language;
+	}
+
+	/**
+	 * Sets default caption format
+	 *
+	 * @param  string $format Caption format, including "srt" (default), "sub", "ass"
+	 */
+	public function setCaptionFormat($format)
+	{
+		if (in_array($format, array('srt', 'sub', 'ass')))
+			$this->captionFormat = (string)$format;
+	}
+
+	/**
+	 * Sets downloaded videos path
+	 *
+	 * @param  float $time Time in float
+	 * @return array           Time array [hours, minutes, seconds]
+	 */
+	protected function parseFloatTime($time)
+	{
+		$result = array();
+		array_push($result, fmod($time, 60));
+		$time = intval($time / 60);
+		array_push($result, fmod($time, 60));
+		$time = intval($time / 60);
+		array_push($result, fmod($time, 60));
+		return array_reverse($result);
 	}
 }

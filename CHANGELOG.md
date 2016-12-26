@@ -1,6 +1,15 @@
 Changelog
 =========
 
+2.6
+-----
+
+*Date: 2016-12-26*
+
+* Encrypted videos can be downloaded now
+* Dependencies updated
+* Some bugs fixed
+
 2.5
 -----
 

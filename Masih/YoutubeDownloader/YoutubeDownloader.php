@@ -6,7 +6,7 @@
  * @author Masih Yeganeh <masihyeganeh@outlook.com>
  * @package YoutubeDownloader
  *
- * @version 2.5
+ * @version 2.6
  * @license http://opensource.org/licenses/MIT MIT
  */
 
@@ -264,7 +264,11 @@ class YoutubeDownloader
 			foreach ($playlistInfo->video as &$video)
 			{
 				$this->videoId = $video->encrypted_id;
-				$videoInfo = $this->getVideoInfo(true);
+				try {
+                    $videoInfo = $this->getVideoInfo(true);
+                } catch (YoutubeException $e) {
+				    throw $e;
+                }
 				$video->image = $videoInfo->image;
 				$video->full_formats = $videoInfo->full_formats;
 				$video->adaptive_formats = $videoInfo->adaptive_formats;
@@ -310,6 +314,34 @@ class YoutubeDownloader
 		return $result;
 	}
 
+    /**
+     * Decrypts encrypted signatures (needs V8js extension)
+     *
+     * @throws YoutubeException If any error happens
+     *
+     * @param  string $signature Encrypted signature
+     * @param  string $code Decryption code
+     * @return string           decrypted signature
+     */
+    protected function decryptSignature($signature, $code)
+    {
+        if (!class_exists('V8Js') || !class_exists('V8JsException'))
+        {
+            throw new YoutubeException('Please install V8js [ http://php.net/manual/en/book.v8js.php ] to download encrypted videos.', 11);
+        }
+
+        $v8 = new \V8Js();
+        $v8->this = new WindowStub();
+
+        $code .= 'signature=PHP.this.$signature("' . $signature . '");';
+
+        try {
+            return $v8->executeString($code, 'base.js');
+        } catch (\V8JsException $e) {
+            throw new YoutubeException($e, 13);
+        }
+    }
+
 	/**
 	 * Gets information of Youtube video
 	 *
@@ -323,7 +355,7 @@ class YoutubeDownloader
 		$result = array();
 
 		try {
-			$response = $this->getUrl('http://www.youtube.com/get_video_info?video_id=' . $this->videoId);
+			$response = $this->getUrl('https://www.youtube.com/get_video_info?video_id=' . $this->videoId);
 		} catch (YoutubeException $e) {
 			throw $e;
 		}
@@ -344,7 +376,37 @@ class YoutubeDownloader
 				if (preg_match('/ytplayer.config\s*=\s*([^\n]+});ytplayer/i', $response->getBody(), $matches))
 				{
 					$ytconfig = json_decode($matches[1], true);
-					$data = $ytconfig['args'];
+                    $data = $ytconfig['args'];
+
+                    if (isset($ytconfig['assets']['js']))
+                    {
+                        $jsAsset = 'https:' . $ytconfig['assets']['js'];
+                        try {
+                            $response = $this->getUrl($jsAsset);
+                        } catch (YoutubeException $e) {
+                            throw $e;
+                        }
+                        $code = $response->getBody();
+
+                        if (!preg_match('/\.sig\|\|([\w\d]+)\(/', $code, $matches)) {
+                            throw new YoutubeException('Decryption algorithm is outdated.', 12);
+                        }
+                        $functionName = $matches[1];
+                        $code = str_replace(
+                            'var window=this;',
+                            'Array.concat=[].concat;Array.slice=[].slice;var window=PHP.this;',
+                            $code
+                        );
+                        $code = str_replace('.prototype.', '.', $code);
+                        $code = str_replace('(0,window.decodeURI)', 'window.decodeURI', $code);
+                        $code = preg_replace('/^(\w+\.install)\(/m', '$1=function(){};$1(', $code);
+                        $code = str_replace(
+                            '})(_yt_player);',
+                            'window.signature=' . $functionName . ';})(_yt_player);',
+                            $code
+                        );
+                        $data['decryptionCode'] = $code;
+                    }
 				}
 				elseif (preg_match('/\'class="message">([^<]+)<\'/i', $response->getBody(), $matches)) {
 					throw new YoutubeException(trim($matches[1]), 10);
@@ -356,21 +418,23 @@ class YoutubeDownloader
 
 		$result['title'] = $data['title'];
 		$result['image'] = array(
-			'max_resolution' => 'http://i1.ytimg.com/vi/' . $this->videoId . '/maxresdefault.jpg',
-			'high_quality' => 'http://i1.ytimg.com/vi/' . $this->videoId . '/hqdefault.jpg',
-			'medium_quality' => 'http://i1.ytimg.com/vi/' . $this->videoId . '/mqdefault.jpg',
-			'standard' => 'http://i1.ytimg.com/vi/' . $this->videoId . '/sddefault.jpg',
+			'max_resolution' => 'https://i1.ytimg.com/vi/' . $this->videoId . '/maxresdefault.jpg',
+			'high_quality' => 'https://i1.ytimg.com/vi/' . $this->videoId . '/hqdefault.jpg',
+			'medium_quality' => 'https://i1.ytimg.com/vi/' . $this->videoId . '/mqdefault.jpg',
+			'standard' => 'https://i1.ytimg.com/vi/' . $this->videoId . '/sddefault.jpg',
 			'thumbnails' => array(
-				'http://i1.ytimg.com/vi/' . $this->videoId . '/default.jpg',
-				'http://i1.ytimg.com/vi/' . $this->videoId . '/0.jpg',
-				'http://i1.ytimg.com/vi/' . $this->videoId . '/1.jpg',
-				'http://i1.ytimg.com/vi/' . $this->videoId . '/2.jpg',
-				'http://i1.ytimg.com/vi/' . $this->videoId . '/3.jpg'
+				'https://i1.ytimg.com/vi/' . $this->videoId . '/default.jpg',
+				'https://i1.ytimg.com/vi/' . $this->videoId . '/0.jpg',
+				'https://i1.ytimg.com/vi/' . $this->videoId . '/1.jpg',
+				'https://i1.ytimg.com/vi/' . $this->videoId . '/2.jpg',
+				'https://i1.ytimg.com/vi/' . $this->videoId . '/3.jpg'
 			)
 		);
 		$result['length_seconds'] = $data['length_seconds'];
 
-		$result['captions'] = ($data['has_cc'] === 'True' ? $this->getCaptions($data, $detailed) : array());
+		$result['captions'] = array();
+		if (isset($data['has_cc']) && $data['has_cc'] === 'True')
+			$result['captions'] = $this->getCaptions($data, $detailed);
 
 		$filename = $this->pathSafeFilename($result['title']);
 
@@ -387,7 +451,17 @@ class YoutubeDownloader
 			foreach ($stream_maps as $key => $value) {
 				$stream_maps[$key] = $this->decodeString($value);
 
-				if (isset($stream_maps[$key]['sig'])) {
+                if (isset($data['decryptionCode']) && isset($stream_maps[$key]['s'])) {
+                    try {
+                        $stream_maps[$key]['url'] .= '&signature=' . $this->decryptSignature(
+                            $stream_maps[$key]['s'], // Encrypted signature,
+                            $data['decryptionCode'] // Decryption code
+                        );
+                    } catch (YoutubeException $e) {
+                        throw $e;
+                    }
+                    unset($stream_maps[$key]['s']);
+                } elseif (isset($stream_maps[$key]['sig'])) {
 					$stream_maps[$key]['url'] .= '&signature=' . $stream_maps[$key]['sig'];
 					unset($stream_maps[$key]['sig']);
 				}
@@ -404,6 +478,18 @@ class YoutubeDownloader
 			foreach ($adaptive_fmts as $key => $value) {
 				$adaptive_fmts[$key] = $this->decodeString($value);
 
+                if (isset($data['decryptionCode']) && isset($adaptive_fmts[$key]['s'])) {
+                    try {
+                        $adaptive_fmts[$key]['url'] .= '&signature=' . $this->decryptSignature(
+                            $adaptive_fmts[$key]['s'], // Encrypted signature,
+                            $data['decryptionCode'] // Decryption code
+                        );
+                    } catch (YoutubeException $e) {
+                        throw $e;
+                    }
+                    unset($adaptive_fmts[$key]['s']);
+                }
+
 				$typeParts = explode(';', $adaptive_fmts[$key]['type']);
 				// TODO: Use container of known itags as extension here
 				$adaptive_fmts[$key]['filename'] = $filename . '.' . $this->getExtension(trim($typeParts[0]));
@@ -413,7 +499,10 @@ class YoutubeDownloader
 			$result['adaptive_formats'] = $adaptive_fmts;
 		}
 
-		$result['video_url'] = 'http://www.youtube.com/watch?v=' . $this->videoId;
+		if (isset($data['decryptionCode']))
+		    unset($data['decryptionCode']);
+
+		$result['video_url'] = 'https://www.youtube.com/watch?v=' . $this->videoId;
 
 		$result = (object) $result;
 		$this->videoInfo = $result;
@@ -655,37 +744,24 @@ EOF;
 	 */
 	protected function downloadFile($url, $file, callable $onProgress, callable $onFinish)
 	{
-		$tempFilename = $file . '_temp_' . time();
-		$tempFile = fopen($tempFilename, 'a');
+		$videoFile = fopen($file, 'a');
 		$options = array(
-			'sink' => $tempFile,
+			'sink' => $videoFile,
 			'verify' => false,
 			'timeout' => 0,
 			'connect_timeout' => 50,
 			'progress' => $onProgress,
-			'cookies' => new CookieJar(false, [['url' => 'http://www.youtube.com/watch?v=' . $this->videoId]])
+			'cookies' => new CookieJar(false, [['url' => 'https://www.youtube.com/watch?v=' . $this->videoId]])
 		);
 
 		$request = new Request('get', $url);
 		$promise = $this->webClient->sendAsync($request, $options);
 		$promise->then(
-			function (ResponseInterface $response) use ($tempFile, $tempFilename, $file, $onFinish) {
-				fclose($tempFile);
+			function (ResponseInterface $response) use ($videoFile, $file, $onFinish) {
+				fclose($videoFile);
 
-				$size = filesize($tempFilename);
+				$size = filesize($file);
 				$remained = intval((string)$response->getHeader('Content-Length')[0]);
-
-				// Appending downloaded file to existing one (Continuing uncomplete files)
-				$fp1 = fopen($file, 'a');
-				$fp2 = fopen($tempFilename, 'r');
-				while (!feof($fp2)) {
-					$data = fread($fp2, 1024);
-					fwrite($fp1, $data);
-				}
-				fclose($fp2);
-				fclose($fp1);
-
-				unlink($tempFilename);
 
 				$onFinish($size, $remained);
 			},

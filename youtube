@@ -121,9 +121,10 @@ if ($cmd[0] === null) {
 			if ($info->response_type == 'playlist') {
 				echo 'Playlist information:' . PHP_EOL;
 				echo colorize($info->title . ' - ' . $info->author, 36) . PHP_EOL;
+				echo 'https://www.youtube.com/playlist?list=' . $cmd[0] . PHP_EOL;
 
 				if (property_exists($info, 'views'))
-					echo '👀  ' . $info->views;
+					echo '👀  ' . number_format($info->views);
 				if (property_exists($info, 'likes'))
 					echo ' 👍  ' . $info->likes;
 				if (property_exists($info, 'dislikes'))
@@ -134,32 +135,42 @@ if ($cmd[0] === null) {
 					echo '   ' . str_repeat('⭐️', $info->rating);
 				if (property_exists($info, 'time_created'))
 					echo '🕑  ' . date('F j Y H:i', $info->time_created);
-				echo PHP_EOL . 'Videos:' . PHP_EOL;
+				echo PHP_EOL . PHP_EOL . 'Videos:' . PHP_EOL;
 
 				foreach ($info->video as $itag => $video) {
-					echo "\t" . colorize('itag: ' . str_pad($itag, 3, ' '), 31);
+					echo "\t" . colorize($video->title, 31) . PHP_EOL;
 					if (property_exists($video, 'views'))
 						echo "\t" . '👀  ' . $video->views;
 					if (property_exists($video, 'likes'))
-						echo "\t" . ' 👍  ' . $video->likes;
+						echo "\t" . ' 👍  ' . number_format($video->likes);
 					if (property_exists($video, 'dislikes'))
-						echo "\t" . ' 👎  ' . $video->dislikes;
+						echo "\t" . ' 👎  ' . number_format($video->dislikes);
 					if (property_exists($video, 'duration'))
 						echo "\t" . ' ⏲  ' . $video->duration;
+					echo PHP_EOL;
 					if (property_exists($video, 'rating'))
-						echo "\t" . '   ' . str_repeat('⭐️ ', $video->rating);
+						echo "\t" . str_repeat('⭐️ ', $video->rating);
 					if (property_exists($video, 'time_created'))
 						echo "\t" . ' 🕑  ' . date('F j Y H:i', $video->time_created);
-					echo PHP_EOL;
+					echo PHP_EOL.PHP_EOL;
 				}
 			} else {
 				echo 'Video information:' . PHP_EOL;
-				echo colorize($info->title, 36) . PHP_EOL;
-				echo $info->video_url;
-				echo "\t(" . '⏲  ' . vsprintf('%02d:%02d:%02d', parseFloatTime($info->length_seconds)) . ')' . PHP_EOL;
-				echo 'Captions:' . PHP_EOL;
-				foreach ($info->captions as $id => $title) {
-					echo "\t" . colorize($id, 31) . ' = ' . $title . PHP_EOL;
+				echo colorize($info->title . ' - ' . $info->author, 36) . PHP_EOL;
+				echo $info->video_url . PHP_EOL;
+				if (property_exists($info, 'views'))
+					echo '👀  ' . number_format($info->views) . "\t";
+				if (property_exists($info, 'duration'))
+					echo ' ⏲  ' . $info->duration . "\t";
+				if (property_exists($info, 'rating'))
+					echo str_repeat('⭐️ ', $info->rating);
+				echo PHP_EOL.PHP_EOL;
+				if (count($info->captions)) {
+					echo 'Captions:' . PHP_EOL;
+					foreach ($info->captions as $id => $title) {
+						echo "\t" . colorize($id, 31) . ' = ' . $title . PHP_EOL;
+					}
+					echo PHP_EOL;
 				}
 				echo 'Full Formats:' . PHP_EOL;
 				$fullFormats = array();
@@ -167,7 +178,7 @@ if ($cmd[0] === null) {
 					array_push($fullFormats, colorize($video->itag, 31));
 				}
 				echo "\t" . implode(', ', $fullFormats);
-				echo PHP_EOL . 'Adaptive Formats:' . PHP_EOL;
+				echo PHP_EOL . PHP_EOL . 'Adaptive Formats:' . PHP_EOL;
 				$adaptiveFormats = array();
 				foreach ($info->adaptive_formats as $video) {
 					array_push($adaptiveFormats, colorize($video->itag, 31));

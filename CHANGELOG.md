@@ -1,6 +1,18 @@
 Changelog
 =========
 
+2.7
+-----
+
+*Date: 2017-01-16*
+
+* Decryption improved
+* More fields added to video info : 'video_id', 'author', 'duration', 'views', 'rating'
+* Fps field added with default value of 25
+* Filename filtering improved
+* More exceptions catched
+* Some bugs fixed
+
 2.6
 -----
 

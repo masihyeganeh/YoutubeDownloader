@@ -31,14 +31,14 @@ Youtube Downloader is PSR-0 compliant and can be installed using [composer](http
 ```json
     {
         "require": {
-            "masih/youtubedownloader": "~2.6"
+            "masih/youtubedownloader": "~2.7"
         }
     }
 ```
 
 and run `composer update` command
 
-Needs PHP 5.5 or newer. Tested with PHP 5.5, 5.6, 7.0, hhvm and nightly
+Needs PHP 5.5 or newer. Tested with PHP 5.5, 5.6, 7.0, 7.1, hhvm and nightly
 
 Usage
 -----

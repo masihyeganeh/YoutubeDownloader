@@ -6,7 +6,7 @@
  * @author Masih Yeganeh <masihyeganeh@outlook.com>
  * @package YoutubeDownloader
  *
- * @version 2.7
+ * @version 2.8
  * @license http://opensource.org/licenses/MIT MIT
  */
 
@@ -190,7 +190,13 @@ class JsDecoder
 			try {
 				return $v8->executeString($code, 'base.js');
 			} catch (\V8JsException $e) {
-				throw new YoutubeException($e, 13);
+				$code = $this->v8jsCode . 'signature=PHP.this.signature("' . $signature . '");';
+
+				try {
+					return $v8->executeString($code, 'base.js');
+				} catch (\V8JsException $e) {
+					throw new YoutubeException($e, 13);
+				}
 			}
 		} else
 			throw new YoutubeException('dunno', 11);

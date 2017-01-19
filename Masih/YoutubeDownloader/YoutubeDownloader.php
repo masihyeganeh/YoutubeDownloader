@@ -6,12 +6,14 @@
  * @author Masih Yeganeh <masihyeganeh@outlook.com>
  * @package YoutubeDownloader
  *
- * @version 2.7
+ * @version 2.8
  * @license http://opensource.org/licenses/MIT MIT
  */
 
 namespace Masih\YoutubeDownloader;
 
+use Masih\YoutubeDownloader\Mp4\MediaTypes;
+use Masih\YoutubeDownloader\Mp4\Mp4;
 use Campo\UserAgent;
 use Dflydev\ApacheMimeTypes\FlatRepository;
 use GuzzleHttp\Client;
@@ -112,6 +114,12 @@ class YoutubeDownloader
 	 * @var integer
 	 */
 	protected $defaultFPS = 25;
+
+	/**
+	 * Is MP4 files editing enabled in finalize phase
+	 * @var boolean
+	 */
+	protected $mp4EditingEnabled = false; // TODO: Enable this when MP4 module is stable
 
 	/**
 	 * Callable function that is called on download progress
@@ -870,26 +878,27 @@ EOF;
 	/**
 	 * Finalizes downloaded file
 	 *
-	 * @param  string  $filename   Path of file to save to
+	 * @param  string  $filename   Full name of file to save to
 	 * @param  mixed $caption Caption language to download or null to download caption of default language. false to prevent download
 	 */
 	public function finalize($filename, $caption)
 	{
-		/*$canEditFile = false;
+		$canEditFile = false;
+		$filePath = $this->path . DIRECTORY_SEPARATOR . $filename;
 		$file = null;
 
-		if (strtolower(pathinfo($filename, PATHINFO_EXTENSION)) == 'mp4') {
-			$file = new Mp4($filename);
+		if ($this->mp4EditingEnabled && strtolower(pathinfo($filename, PATHINFO_EXTENSION)) == 'mp4') {
+			$file = new Mp4($filePath);
 			$canEditFile = true;
 
 			if (strtolower($this->captionFormat) == 'sub')
 				$this->defaultFPS = $file->getFPS();
-		}*/
+		}
 
 		if ($caption !== false && count($this->videoInfo->captions))
 			$this->downloadCaption($this->videoInfo->captions, $caption, $filename);
 
-		/*if ($canEditFile) {
+		if ($canEditFile) {
 			try {
 				$response = $this->webClient->get($this->videoInfo->image['high_quality']);
 				if ($response->getStatusCode() == 200)
@@ -897,6 +906,7 @@ EOF;
 			} catch (GuzzleException $e) {}
 
 			$file->setTrackName($this->videoInfo->title);
+			$file->setArtist($this->videoInfo->author);
 
 			$videosCount = $this->isPlaylist ? count($this->playlistInfo->video) : 1;
 			if ($videosCount > 1)
@@ -905,8 +915,15 @@ EOF;
 			$file->setSoftwareInformation('Downloaded by YoutubeDownloader https://is.gd/Youtubedownloader');
 			$file->setMediaType(MediaTypes::Movie);
 
-			$file->save(null);
-		}*/
+			$tempFilePath = $filePath . time();
+
+			try {
+				$file->saveAs($tempFilePath);
+
+				@rename($tempFilePath, $filePath);
+				@unlink($tempFilePath);
+			} catch (\Zend_Media_Iso14496_Exception $e) {}
+		}
 	}
 
 	/**
@@ -1036,6 +1053,16 @@ EOF;
 	{
 		if (in_array($format, array('srt', 'sub', 'ass')))
 			$this->captionFormat = (string)$format;
+	}
+
+	/**
+	 * Sets default caption format
+	 *
+	 * @param  boolean $enable Enables or disables use of mp4 editing
+	 */
+	public function enableMp4Editing($enable)
+	{
+		$this->mp4EditingEnabled = !!$enable;
 	}
 
 	/**

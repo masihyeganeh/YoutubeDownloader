@@ -1,6 +1,14 @@
 Changelog
 =========
 
+2.8
+-----
+
+*Date: 2017-01-20*
+
+* Experimental MP4 editing added
+* Some bugs fixed
+
 2.7
 -----
 

@@ -31,7 +31,7 @@ Youtube Downloader is PSR-0 compliant and can be installed using [composer](http
 ```json
     {
         "require": {
-            "masih/youtubedownloader": "~2.7"
+            "masih/youtubedownloader": "~2.8"
         }
     }
 ```
@@ -172,7 +172,23 @@ Changes
 
 see [CHANGELOG.md](CHANGELOG.md).
 
-   
+
+
+Experimental Feature
+--------------------
+
+I'm currently working on a pure php implementation of MP4 file editor and muxer. You can enable this feature by calling
+```php
+<?php
+$youtube = new YoutubeDownloader('gmFn62dr0D8');
+$youtube->enableMp4Editing(true);
+```
+
+As of now, it will set Track name, Artist and Cover Art of videos (and Track number for playlists) according to the video information.
+In near future releases all subtitles will be muxed in the MP4 file and in far future hopefully muxing adaptive files in one MP4 file will be added.
+
+
+
 License
 -------
 

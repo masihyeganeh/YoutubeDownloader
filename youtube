@@ -205,8 +205,8 @@ if ($cmd[0] === null) {
 		try {
 			$mediaInfo = $youtube->getInfo();
 
-			echo 'Downloading ' . ucfirst($mediaInfo->response_type) . ' "' . $mediaInfo->title;
-			if ($mediaInfo->response_type == 'playlist') echo '" by "' . $mediaInfo->author;
+			echo 'Downloading ' . ucfirst($mediaInfo->response_type);
+			echo ' "' . $mediaInfo->title . '" by "' . $mediaInfo->author;
 			echo '"...' . PHP_EOL . PHP_EOL;
 
 			$bar = new CliProgressBar();

@@ -172,18 +172,23 @@ if ($cmd[0] === null) {
 					}
 					echo PHP_EOL;
 				}
-				echo 'Full Formats:' . PHP_EOL;
-				$fullFormats = array();
-				foreach ($info->full_formats as $video) {
-					array_push($fullFormats, colorize($video->itag, 31));
+				if (property_exists($info, 'stream_url')) {
+					echo colorize('Watch it live', 31) . ':' . PHP_EOL;
+					echo $info->stream_url;
+				} else {
+					echo 'Full Formats:' . PHP_EOL;
+					$fullFormats = array();
+					foreach ($info->full_formats as $video) {
+						array_push($fullFormats, colorize($video->itag, 31));
+					}
+					echo "\t" . implode(', ', $fullFormats);
+					echo PHP_EOL . PHP_EOL . 'Adaptive Formats:' . PHP_EOL;
+					$adaptiveFormats = array();
+					foreach ($info->adaptive_formats as $video) {
+						array_push($adaptiveFormats, colorize($video->itag, 31));
+					}
+					echo "\t" . implode(', ', $adaptiveFormats);
 				}
-				echo "\t" . implode(', ', $fullFormats);
-				echo PHP_EOL . PHP_EOL . 'Adaptive Formats:' . PHP_EOL;
-				$adaptiveFormats = array();
-				foreach ($info->adaptive_formats as $video) {
-					array_push($adaptiveFormats, colorize($video->itag, 31));
-				}
-				echo "\t" . implode(', ', $adaptiveFormats);
 				echo PHP_EOL;
 			}
 		} catch (YoutubeException $exception) {
@@ -205,37 +210,43 @@ if ($cmd[0] === null) {
 		try {
 			$mediaInfo = $youtube->getInfo();
 
-			echo 'Downloading ' . ucfirst($mediaInfo->response_type);
-			echo ' "' . $mediaInfo->title . '" by "' . $mediaInfo->author;
-			echo '"...' . PHP_EOL . PHP_EOL;
+			if (property_exists($mediaInfo, 'stream_url')) {
+				echo 'Watch "' . $mediaInfo->title . '" by "' . $mediaInfo->author;
+				echo '" ' . colorize('live', 31) . ':' . PHP_EOL;
+				echo colorize($mediaInfo->stream_url, 36) . PHP_EOL;
+			} else {
+				echo 'Downloading ' . ucfirst($mediaInfo->response_type);
+				echo ' "' . $mediaInfo->title . '" by "' . $mediaInfo->author;
+				echo '"...' . PHP_EOL . PHP_EOL;
 
-			$bar = new CliProgressBar();
+				$bar = new CliProgressBar();
 
-			$bar->setColorToWhite();
+				$bar->setColorToWhite();
 
-			$youtube->onComplete = function ($filePath, $fileSize, $index, $count) use ($bar) {
-				$bar->setColorToGreen();
-				$bar->display();
-				$bar->end();
-
-				echo 'Video ';
-				if ($count > 1) echo $index . ' of ' . $count . ' ';
-				echo 'has been downloaded (' . humanize($fileSize) . ') in' . PHP_EOL . $filePath . PHP_EOL . PHP_EOL;
-			};
-
-			$youtube->onProgress = function ($downloadedBytes, $fileSize, $index, $count) use ($bar) {
-				if ($fileSize > 0) {
-					$bar->setSteps($fileSize);
-					$bar->setCurrentStep($downloadedBytes);
+				$youtube->onComplete = function ($filePath, $fileSize, $index, $count) use ($bar) {
+					$bar->setColorToGreen();
 					$bar->display();
+					$bar->end();
 
-					echo ' ' . colorize(humanize($fileSize), 35);
-					if ($count > 1) echo ' ' . colorize('[' . $index . ' of ' . $count . ' videos]', 36);
-				} else
-					echo 'Downloading...'; // File size is unknown, so just keep downloading
-			};
+					echo 'Video ';
+					if ($count > 1) echo $index . ' of ' . $count . ' ';
+					echo 'has been downloaded (' . humanize($fileSize) . ') in' . PHP_EOL . $filePath . PHP_EOL . PHP_EOL;
+				};
 
-			$youtube->download($itag, $resume, $language);
+				$youtube->onProgress = function ($downloadedBytes, $fileSize, $index, $count) use ($bar) {
+					if ($fileSize > 0) {
+						$bar->setSteps($fileSize);
+						$bar->setCurrentStep($downloadedBytes);
+						$bar->display();
+
+						echo ' ' . colorize(humanize($fileSize), 35);
+						if ($count > 1) echo ' ' . colorize('[' . $index . ' of ' . $count . ' videos]', 36);
+					} else
+						echo 'Downloading...'; // File size is unknown, so just keep downloading
+				};
+
+				$youtube->download($itag, $resume, $language);
+			}
 		} catch (YoutubeException $exception) {
 			$cmd->error($exception);
 		}

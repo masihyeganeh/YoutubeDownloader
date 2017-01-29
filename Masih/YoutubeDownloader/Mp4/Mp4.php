@@ -6,7 +6,7 @@
  * @author Masih Yeganeh <masihyeganeh@outlook.com>
  * @package YoutubeDownloader
  *
- * @version 2.8
+ * @version 2.8.1
  */
 
 namespace Masih\YoutubeDownloader\Mp4;
@@ -269,6 +269,11 @@ class Mp4
 		$this->mp4->write($ouputFile);
 		$this->enableNotices();
 	}
+
+    public function __destruct()
+    {
+        $this->mp4 = null;
+    }
 
 	public function getFPS() {
 		$movieHeader = $this->mp4->moov->mvhd;

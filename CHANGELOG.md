@@ -1,6 +1,18 @@
 Changelog
 =========
 
+2.8.1
+-----
+
+*Date: 2017-01-29*
+
+* Live events better handled
+* Mp4 editing bug fixed
+* Readme improved a bit
+* CLI improved
+* Some bugs fixed
+* Typos fixed
+
 2.8
 -----
 
@@ -18,7 +30,7 @@ Changelog
 * More fields added to video info : 'video_id', 'author', 'duration', 'views', 'rating'
 * Fps field added with default value of 25
 * Filename filtering improved
-* More exceptions catched
+* More exceptions caught
 * Some bugs fixed
 
 2.6
@@ -74,7 +86,7 @@ Changelog
 
 *Date: 2016-07-15*
 
-* Updated dependencies to fix reqire-dev problem
+* Updated dependencies to fix require-dev problem
 * Bugs fixed
 
 1.3

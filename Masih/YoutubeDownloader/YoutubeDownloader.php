@@ -6,7 +6,7 @@
  * @author Masih Yeganeh <masihyeganeh@outlook.com>
  * @package YoutubeDownloader
  *
- * @version 2.8
+ * @version 2.8.1
  * @license http://opensource.org/licenses/MIT MIT
  */
 
@@ -456,7 +456,13 @@ class YoutubeDownloader
 
 		$filename = $this->pathSafeFilename($result['title']);
 
-		if (isset($data['ps']) && $data['ps'] == 'live')
+		$isLive = false;
+
+		if (isset($data['ps']) && $data['ps'] == 'live') $isLive = true;
+		if (isset($data['hlsdvr']) && $data['hlsdvr'] == '1') $isLive = true;
+		if (isset($data['live_playback']) && $data['live_playback'] == '1') $isLive = true;
+
+		if ($isLive)
 		{
 			if (!isset($data['hlsvp']))
 				throw new YoutubeException('This live event is over.', 2);
@@ -693,7 +699,7 @@ EOF;
 	}
 
 	/**
-	 * Removes unsafe characters from file name
+	 * Downloads caption of the video in selected language
 	 *
 	 * @param  array $captions Captions data of video
 	 * @param  string $language User selected language
@@ -726,6 +732,7 @@ EOF;
 	 * @return string         Path Safe file name
 	 *
 	 * @todo Use .net framework's Path.GetInvalidPathChars() for a better function
+     * @todo Handle UTF-8 file names at least in windows
 	 */
 	protected function pathSafeFilename($string)
 	{
@@ -900,7 +907,7 @@ EOF;
 
 		if ($canEditFile) {
 			try {
-				$response = $this->webClient->get($this->videoInfo->image['high_quality']);
+				$response = $this->webClient->get($this->videoInfo->image['medium_quality']);
 				if ($response->getStatusCode() == 200)
 					$file->setCover($response->getBody());
 			} catch (GuzzleException $e) {}
@@ -916,13 +923,15 @@ EOF;
 			$file->setMediaType(MediaTypes::Movie);
 
 			$tempFilePath = $filePath . time();
+			copy($filePath, $tempFilePath); // Make backup of video in case something goes wrong
 
 			try {
-				$file->saveAs($tempFilePath);
-
-				@rename($tempFilePath, $filePath);
-				@unlink($tempFilePath);
-			} catch (\Zend_Media_Iso14496_Exception $e) {}
+				$file->save();
+				unlink($tempFilePath);
+			} catch (\Zend_Media_Iso14496_Exception $e) {
+				$file = null;
+				rename($tempFilePath, $filePath);
+			}
 		}
 	}
 

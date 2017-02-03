@@ -6,7 +6,7 @@
  * @author Masih Yeganeh <masihyeganeh@outlook.com>
  * @package YoutubeDownloader
  *
- * @version 2.8.1
+ * @version 2.8.2
  * @license http://opensource.org/licenses/MIT MIT
  */
 
@@ -135,6 +135,12 @@ class YoutubeDownloader
 	public $onComplete;
 
 	/**
+	 * Callable function that is called on finalize complete
+	 * @var callable
+	 */
+	public $onFinalized;
+
+	/**
 	 * Instantiates a YoutubeDownloader with a random User-Agent
 	 *
 	 * @param  string $videoUrl Full Youtube video url or just video ID
@@ -156,6 +162,7 @@ class YoutubeDownloader
 
 		$this->onComplete = function ($filePath, $fileSize) {};
 		$this->onProgress = function ($downloadedBytes, $fileSize) {};
+		$this->onFinalized = function () {};
 
 		$this->videoId = $this->getVideoIdFromUrl($videoUrl);
 		$this->playlistId = $this->getPlaylistIdFromUrl($videoUrl);
@@ -471,7 +478,9 @@ class YoutubeDownloader
 		}
 		else
 		{
-			$stream_maps = explode(',', $data['url_encoded_fmt_stream_map']);
+			$stream_maps = array();
+			if (isset($data['url_encoded_fmt_stream_map']))
+				$stream_maps = explode(',', $data['url_encoded_fmt_stream_map']);
 			foreach ($stream_maps as $key => $value) {
 				$stream_maps[$key] = $this->decodeString($value);
 
@@ -498,7 +507,9 @@ class YoutubeDownloader
 			}
 			$result['full_formats'] = $stream_maps;
 
-			$adaptive_fmts = explode(',', $data['adaptive_fmts']);
+			$adaptive_fmts = array();
+			if (isset($data['adaptive_fmts']))
+				$adaptive_fmts = explode(',', $data['adaptive_fmts']);
 			foreach ($adaptive_fmts as $key => $value) {
 				$adaptive_fmts[$key] = $this->decodeString($value);
 
@@ -732,7 +743,7 @@ EOF;
 	 * @return string         Path Safe file name
 	 *
 	 * @todo Use .net framework's Path.GetInvalidPathChars() for a better function
-     * @todo Handle UTF-8 file names at least in windows
+	 * @todo Handle UTF-8 file names at least in windows
 	 */
 	protected function pathSafeFilename($string)
 	{
@@ -844,7 +855,6 @@ EOF;
 
 				$this->downloadVideo($itag, $resume, $caption);
 			}
-
 		}
 	}
 
@@ -874,6 +884,16 @@ EOF;
 					$this->finalize($video->filename, $caption);
 					return;
 				}
+			}
+		}
+
+		if (count($this->videoInfo->full_formats) === 0) {
+			if (count($this->videoInfo->adaptive_formats) === 0)
+				throw new YoutubeException('There is no format for download', 32);
+			else {
+				$video = $this->videoInfo->adaptive_formats[0];
+				$this->downloadAdaptive($video->url, $video->filename, $video->clen, $resume);
+				$this->finalize($video->filename, $caption);
 			}
 		}
 
@@ -933,6 +953,11 @@ EOF;
 				rename($tempFilePath, $filePath);
 			}
 		}
+
+		$videosCount = $this->isPlaylist ? count($this->playlistInfo->video) : 1;
+
+		$onFinalized = $this->onFinalized;
+		$onFinalized($file, $this->currentDownloadingVideoIndex, $videosCount);
 	}
 
 	/**
@@ -956,7 +981,7 @@ EOF;
 
 		$this->downloadFile(
 			$url, $file,
-			function ($downloadSize, $downloaded) use ($downloadedBytes, $fileSize, $onProgress, $videosCount) {
+			function ($downloadSize, $downloaded) use (&$downloadedBytes, &$fileSize, $onProgress, $videosCount) {
 				if (!$downloaded && !$downloadSize) return 1;
 				if ($downloadedBytes != $downloaded)
 					$onProgress($downloaded, $downloadSize, $this->currentDownloadingVideoIndex, $videosCount);
@@ -1002,7 +1027,7 @@ EOF;
 		{
 			$this->downloadFile(
 				$url . '&range=' . $size . '-' . $completeSize, $file,
-				function ($downloadSize, $downloaded) use ($downloadedBytes, $fileSize, $onProgress, $videosCount)  {
+				function ($downloadSize, $downloaded) use (&$downloadedBytes, &$fileSize, $onProgress, $videosCount)  {
 					if (!$downloaded && !$downloadSize) return 1;
 					if ($downloadedBytes != $downloaded)
 						$onProgress($downloaded, $downloadSize, $this->currentDownloadingVideoIndex, $videosCount);

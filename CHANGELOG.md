@@ -1,6 +1,14 @@
 Changelog
 =========
 
+2.8.2
+-----
+
+*Date: 2017-02-03*
+
+* Windows CLI fixed
+* Some bugs fixed
+
 2.8.1
 -----
 

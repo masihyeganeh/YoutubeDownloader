@@ -13,12 +13,33 @@ use \Dariuszp\CliProgressBar;
 use \Masih\YoutubeDownloader\YoutubeException;
 use \Masih\YoutubeDownloader\YoutubeDownloader;
 
+define('WINDOWS', DIRECTORY_SEPARATOR == '\\');
+
+$icons = array(
+	'X' => '\u2718',
+	'Views:' => '\ud83d\udc40',
+	'Likes:' => '\ud83d\udc4d',
+	'Dislikes:' => '\ud83d\udc4e',
+	'Duration:' => '\u23f2',
+	'Created at:' => '\ud83d\udd51'
+);
+$icons = array_map(function($unicode) {
+	return json_decode('"' . $unicode . '"');
+}, $icons);
+
+function iconOf($name) {
+	if (WINDOWS) return $name;
+	global $icons;
+	return $icons[$name];
+}
+
 function humanize($size){
 	$l = intval(log($size,1024));
 	return round($size/pow(1024, $l), 2) . ' ' . ['', 'K', 'M', 'G', 'T'][$l] . 'B';
 }
 
 function colorize($text, $colorId=39){
+	if (WINDOWS) return $text;
 	$format = "\033[%dm%s\033[%dm";
 	return sprintf($format, $colorId, $text, 39);
 }
@@ -105,7 +126,7 @@ if ($cmd[0] === null) {
 				if (property_exists($itag, $var))
 					array_push($data, $itag->$var);
 				else
-					array_push($data, '✘');
+					array_push($data, iconOf('X'));
 			}
 			echo $id . "\t" . implode("\t", $data) . PHP_EOL;
 		}
@@ -124,34 +145,34 @@ if ($cmd[0] === null) {
 				echo 'https://www.youtube.com/playlist?list=' . $cmd[0] . PHP_EOL;
 
 				if (property_exists($info, 'views'))
-					echo '👀  ' . number_format($info->views);
+					echo iconOf('Views:') . '  ' . number_format($info->views);
 				if (property_exists($info, 'likes'))
-					echo ' 👍  ' . $info->likes;
+					echo ' ' . iconOf('Likes:') . '  ' . $info->likes;
 				if (property_exists($info, 'dislikes'))
-					echo ' 👎  ' . $info->dislikes;
+					echo ' ' . iconOf('Dislikes:') . '  ' . $info->dislikes;
 				if (property_exists($info, 'duration'))
-					echo ' ⏲  ' . $info->duration;
+					echo ' ' . iconOf('Duration:') . '  ' . $info->duration;
 				if (property_exists($info, 'rating'))
 					echo '   ' . str_repeat('⭐️', $info->rating);
 				if (property_exists($info, 'time_created'))
-					echo '🕑  ' . date('F j Y H:i', $info->time_created);
+					echo iconOf('Created at:') . '  ' . date('F j Y H:i', $info->time_created);
 				echo PHP_EOL . PHP_EOL . 'Videos:' . PHP_EOL;
 
 				foreach ($info->video as $itag => $video) {
 					echo "\t" . colorize($video->title, 31) . PHP_EOL;
 					if (property_exists($video, 'views'))
-						echo "\t" . '👀  ' . $video->views;
+						echo "\t" . iconOf('Views:') . '  ' . $video->views;
 					if (property_exists($video, 'likes'))
-						echo "\t" . ' 👍  ' . number_format($video->likes);
+						echo "\t" . ' ' . iconOf('Likes:') . '  ' . number_format($video->likes);
 					if (property_exists($video, 'dislikes'))
-						echo "\t" . ' 👎  ' . number_format($video->dislikes);
+						echo "\t" . ' ' . iconOf('Dislikes:') . '  ' . number_format($video->dislikes);
 					if (property_exists($video, 'duration'))
-						echo "\t" . ' ⏲  ' . $video->duration;
+						echo "\t" . ' ' . iconOf('Duration:') . '  ' . $video->duration;
 					echo PHP_EOL;
 					if (property_exists($video, 'rating'))
-						echo "\t" . str_repeat('⭐️ ', $video->rating);
+						echo "\t" . (WINDOWS ? $video->rating . ' Stars ' : str_repeat('⭐️ ', $video->rating));
 					if (property_exists($video, 'time_created'))
-						echo "\t" . ' 🕑  ' . date('F j Y H:i', $video->time_created);
+						echo "\t" . ' ' . iconOf('Created at:') . '  ' . date('F j Y H:i', $video->time_created);
 					echo PHP_EOL.PHP_EOL;
 				}
 			} else {
@@ -159,11 +180,11 @@ if ($cmd[0] === null) {
 				echo colorize($info->title . ' - ' . $info->author, 36) . PHP_EOL;
 				echo $info->video_url . PHP_EOL;
 				if (property_exists($info, 'views'))
-					echo '👀  ' . number_format($info->views) . "\t";
+					echo iconOf('Views:') . '  ' . number_format($info->views) . "\t";
 				if (property_exists($info, 'duration'))
-					echo ' ⏲  ' . $info->duration . "\t";
+					echo ' ' . iconOf('Duration:') . '  ' . $info->duration . "\t";
 				if (property_exists($info, 'rating'))
-					echo str_repeat('⭐️ ', $info->rating);
+					echo (WINDOWS ? $info->rating . ' Stars ' : str_repeat('⭐️ ', $info->rating));
 				echo PHP_EOL.PHP_EOL;
 				if (count($info->captions)) {
 					echo 'Captions:' . PHP_EOL;
@@ -176,18 +197,22 @@ if ($cmd[0] === null) {
 					echo colorize('Watch it live', 31) . ':' . PHP_EOL;
 					echo $info->stream_url;
 				} else {
-					echo 'Full Formats:' . PHP_EOL;
-					$fullFormats = array();
-					foreach ($info->full_formats as $video) {
-						array_push($fullFormats, colorize($video->itag, 31));
+					if (count($info->full_formats)) {
+						echo 'Full Formats:' . PHP_EOL;
+						$fullFormats = array();
+						foreach ($info->full_formats as $video) {
+							array_push($fullFormats, colorize($video->itag, 31));
+						}
+						echo "\t" . implode(', ', $fullFormats);
 					}
-					echo "\t" . implode(', ', $fullFormats);
-					echo PHP_EOL . PHP_EOL . 'Adaptive Formats:' . PHP_EOL;
-					$adaptiveFormats = array();
-					foreach ($info->adaptive_formats as $video) {
-						array_push($adaptiveFormats, colorize($video->itag, 31));
+					if (count($info->adaptive_formats)) {
+						echo PHP_EOL . PHP_EOL . 'Adaptive Formats:' . PHP_EOL;
+						$adaptiveFormats = array();
+						foreach ($info->adaptive_formats as $video) {
+							array_push($adaptiveFormats, colorize($video->itag, 31));
+						}
+						echo "\t" . implode(', ', $adaptiveFormats);
 					}
-					echo "\t" . implode(', ', $adaptiveFormats);
 				}
 				echo PHP_EOL;
 			}
@@ -221,10 +246,13 @@ if ($cmd[0] === null) {
 
 				$bar = new CliProgressBar();
 
-				$bar->setColorToWhite();
+				if (WINDOWS)
+					$bar->displayAlternateProgressBar();
+				else
+					$bar->setColorToWhite();
 
 				$youtube->onComplete = function ($filePath, $fileSize, $index, $count) use ($bar) {
-					$bar->setColorToGreen();
+					if (!WINDOWS) $bar->setColorToGreen();
 					$bar->display();
 					$bar->end();
 

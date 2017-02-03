@@ -20,9 +20,7 @@ We assume that you already installed [PHP](http://php.net/) and [Composer](http:
 ```
 composer global require Masih/YoutubeDownloader
 ```
-After installation you'll have a new `youtube` command. Just write `youtube --help` to get more information.  
-  
-_Please note that there are lots of Unicode characters in CLI, so it may not work as expected in Microsoft Windows._
+After installation you'll have a new `youtube` command. Just write `youtube --help` to get more information.
 
 Installation
 ------------
@@ -139,7 +137,7 @@ $youtube->download();
 ### Download complete
 
 Download complete event is available via `onComplete` parameter.
-it's a closure and has four parameters `$downloadedBytes`, `$fileSize`, `$index` and `$count`.
+it's a closure and has four parameters `$filePath`, `$fileSize`, `$index` and `$count`.
 `$index` and `$count` are useful for tracking download progress of playlist and both values are `1` for single videos.
 
 ```php
@@ -149,7 +147,27 @@ $youtube = new YoutubeDownloader('PLbjM1u8Yb9I0rK4hkPa9TWe4N_idJOnrJ');
 
 $youtube->onComplete = function ($filePath, $fileSize, $index, $count) {
     if ($count > 1) echo '[' . $index . ' of ' . $count . ' videos] ';
-	echo PHP_EOL . 'Downloading of ' . $fileSize . ' bytes has been completed. It is saved in ' . $filePath . PHP_EOL;
+	echo 'Downloading of ' . $fileSize . ' bytes has been completed. It is saved in ' . $filePath . PHP_EOL;
+};
+
+
+$youtube->download();
+```
+   
+### Finalized
+
+After completing download, Finalized event will be fired. it is available via `onFinalized` parameter.
+it's a closure and has three parameters `$filePath`, `$index` and `$count`.
+`$index` and `$count` are `1` for single videos.
+
+```php
+<?php
+$youtube = new YoutubeDownloader('PLbjM1u8Yb9I0rK4hkPa9TWe4N_idJOnrJ');
+
+
+$youtube->onFinalized = function ($filePath, $index, $count) {
+    if ($count > 1) echo '[' . $index . ' of ' . $count . ' videos] ';
+	echo $filePath . ' Finalized' . PHP_EOL;
 };
 
 

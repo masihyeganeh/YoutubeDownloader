@@ -13,7 +13,14 @@ use \Dariuszp\CliProgressBar;
 use \Masih\YoutubeDownloader\YoutubeException;
 use \Masih\YoutubeDownloader\YoutubeDownloader;
 
-define('WINDOWS', DIRECTORY_SEPARATOR == '\\');
+define('WINDOWS', (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN'));
+$supportsColor = true;
+if (WINDOWS) {
+	$windowsVersion = explode('.', php_uname('r'));
+	if (is_numeric($windowsVersion[0]) && intval($windowsVersion[0]) < 10)
+		$supportsColor = false;
+}
+define('SUPPORTSCOLOR', $supportsColor);
 
 $icons = array(
 	'X' => '\u2718',
@@ -39,7 +46,7 @@ function humanize($size){
 }
 
 function colorize($text, $colorId=39){
-	if (WINDOWS) return $text;
+	if (!SUPPORTSCOLOR) return $text;
 	$format = "\033[%dm%s\033[%dm";
 	return sprintf($format, $colorId, $text, 39);
 }
@@ -252,13 +259,14 @@ if ($cmd[0] === null) {
 					$bar->setColorToWhite();
 
 				$youtube->onComplete = function ($filePath, $fileSize, $index, $count) use ($bar) {
-					if (!WINDOWS) $bar->setColorToGreen();
+					if (SUPPORTSCOLOR) $bar->setColorToGreen();
 					$bar->display();
 					$bar->end();
 
 					echo 'Video ';
 					if ($count > 1) echo $index . ' of ' . $count . ' ';
 					echo 'has been downloaded (' . humanize($fileSize) . ') in' . PHP_EOL . $filePath . PHP_EOL . PHP_EOL;
+					if (SUPPORTSCOLOR) $bar->setColorToWhite();
 				};
 
 				$youtube->onProgress = function ($downloadedBytes, $fileSize, $index, $count) use ($bar) {

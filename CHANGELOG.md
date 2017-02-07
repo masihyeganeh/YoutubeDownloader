@@ -1,6 +1,14 @@
 Changelog
 =========
 
+2.8.3
+-----
+
+*Date: 2017-02-07*
+
+* CLI colors are available for Windows 10+
+* Some bugs fixed
+
 2.8.2
 -----
 

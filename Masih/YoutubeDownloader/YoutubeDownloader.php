@@ -6,7 +6,7 @@
  * @author Masih Yeganeh <masihyeganeh@outlook.com>
  * @package YoutubeDownloader
  *
- * @version 2.8.2
+ * @version 2.8.3
  * @license http://opensource.org/licenses/MIT MIT
  */
 
@@ -414,7 +414,11 @@ class YoutubeDownloader
 				$data = $ytconfig['args'];
 
 				if ($detailed && isset($ytconfig['assets']['js'])) {
-					$jsAsset = 'https:' . $ytconfig['assets']['js'];
+					$jsAsset = $ytconfig['assets']['js'];
+					if (strlen($jsAsset) > 1 && substr($jsAsset, 0, 2) == '//')
+						$jsAsset = 'https:' . $jsAsset;
+					else
+						$jsAsset = 'https://s.ytimg.com' . $jsAsset;
 					try {
 						$response = $this->getUrl($jsAsset);
 					} catch (YoutubeException $e) {

@@ -6,7 +6,7 @@
  * @author Masih Yeganeh <masihyeganeh@outlook.com>
  * @package YoutubeDownloader
  *
- * @version 2.8.2
+ * @version 2.8.3
  * @license http://opensource.org/licenses/MIT MIT
  */
 
@@ -55,7 +55,7 @@ class JsDecoder
 		$this->code = $jsCode;
 		$this->objects = array();
 
-		if (preg_match('/\.sig\|\|([\w\d]+)\(/', $this->code, $matches)) {
+		if (preg_match('/\.set\("signature",\s*([\w\d]+)\(|\.sig\|\|([\w\d]+)\(/', $this->code, $matches)) {
 			$signFunctionName = $matches[1];
 			$this->getFunction($signFunctionName);
 			$file = $this->path . $this->urlHash;

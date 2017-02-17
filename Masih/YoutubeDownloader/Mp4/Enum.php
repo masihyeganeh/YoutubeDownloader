@@ -6,7 +6,7 @@
  * @author Masih Yeganeh <masihyeganeh@outlook.com>
  * @package YoutubeDownloader
  *
- * @version 2.8.3
+ * @version 2.8.4
  */
 
 namespace Masih\YoutubeDownloader\Mp4;

@@ -6,7 +6,7 @@
  * @author Masih Yeganeh <masihyeganeh@outlook.com>
  * @package YoutubeDownloader
  *
- * @version 2.8.3
+ * @version 2.8.4
  * @license http://opensource.org/licenses/MIT MIT
  */
 
@@ -166,7 +166,11 @@ class YoutubeDownloader
 
 		$this->videoId = $this->getVideoIdFromUrl($videoUrl);
 		$this->playlistId = $this->getPlaylistIdFromUrl($videoUrl);
-		$this->playlistInfo = $this->getPlaylistInfo();
+		try {
+			$this->playlistInfo = $this->getPlaylistInfo();
+		} catch (YoutubeException $exception) {
+			throw $exception;
+		}
 
 		if ($this->playlistInfo === null) {
 			$this->isPlaylist = false;
@@ -327,7 +331,7 @@ class YoutubeDownloader
 	 * Decodes URL encoded string
 	 *
 	 * @param  string $input URL encoded string
-	 * @return string           decoded string
+	 * @return array           decoded string
 	 */
 	protected function decodeString($input)
 	{
@@ -408,13 +412,18 @@ class YoutubeDownloader
 					throw new YoutubeException(trim($matches[1]), 10);
 				}
 
-				if (!is_array($ytconfig))
-					throw new YoutubeException('Could not get video page content', 21);
+				$jsAsset = null;
+				if (preg_match('/<script src="([^"]+)" name="player\/base"><\/script>/i', $response, $matches)) {
+					$jsAsset = $matches[1];
+				}
 
-				$data = $ytconfig['args'];
+				if (is_array($ytconfig)) {
+					$data = array_merge($data, $ytconfig['args']);
+					if (isset($ytconfig['assets']['js']))
+						$jsAsset = $ytconfig['assets']['js'];
+				}
 
-				if ($detailed && isset($ytconfig['assets']['js'])) {
-					$jsAsset = $ytconfig['assets']['js'];
+				if ($detailed && $jsAsset !== null) {
 					if (strlen($jsAsset) > 1 && substr($jsAsset, 0, 2) == '//')
 						$jsAsset = 'https:' . $jsAsset;
 					else

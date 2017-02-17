@@ -141,7 +141,12 @@ if ($cmd[0] === null) {
 	else
 		$cmd->printHelp();
 } else {
-	$youtube = new YoutubeDownloader($cmd[0]);
+	$youtube = null;
+	try {
+		$youtube = new YoutubeDownloader($cmd[0]);
+	} catch (YoutubeException $e) {
+		$cmd->error($e);
+	}
 	if ($cmd['o']) {
 		try {
 			$info = $youtube->getInfo();

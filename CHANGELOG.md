@@ -1,6 +1,15 @@
 Changelog
 =========
 
+2.8.4
+-----
+
+*Date: 2017-02-17*
+
+* More exceptions handled
+* More itags supported
+* Some bugs fixed
+
 2.8.3
 -----
 

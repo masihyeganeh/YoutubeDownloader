@@ -20,6 +20,7 @@
     "type": "Main Stream"
   },
   "17": {
+    "description": "Low Quality [144p]",
     "container": "3gp",
     "resolution": "176 x 144",
     "frame_rate": "12 fps",
@@ -49,19 +50,19 @@
     "type": "Main Stream"
   },
   "34": {
-    "description": "[360p]",
+    "description": "Medium Quality [360p]",
     "container": "flv",
     "resolution": "640 x 360",
     "type": "Main Stream"
   },
   "35": {
-    "description": "[480p]",
+    "description": "High Quality [480p]",
     "container": "flv",
     "resolution": "854 x 480",
     "type": "Main Stream"
   },
   "36": {
-    "description": "[240p]",
+    "description": "Low Quality [240p]",
     "container": "3gp",
     "resolution": "320 x 240",
     "frame_rate": "25 fps",
@@ -93,25 +94,46 @@
     "type": "Main Stream"
   },
   "44": {
-    "description": "[480p]",
+    "description": "High Quality [480p]",
     "container": "webm",
     "resolution": "854 x 480",
     "type": "Main Stream"
   },
   "45": {
-    "description": "[720p]",
+    "description": "HD High Quality [720p]",
     "container": "webm",
     "resolution": "1280 x 720",
     "type": "Main Stream"
   },
   "46": {
-    "description": "[1080p]",
+    "description": "HD High Quality [1080p]",
     "container": "webm",
     "resolution": "1920 x 1080",
     "type": "Main Stream"
   },
+  "59": {
+    "description": "High Quality [480p]",
+    "container": "mp4",
+    "resolution": "854 x 480",
+    "frame_rate": "24.194 fps",
+    "video_format": "AVC (MPEG4 H.264)",
+    "audio": "Stereo, 44.1 KHz 128 Kbps",
+    "audio_format": "AAC",
+    "type": "Main Stream"
+  },
+  "78": {
+    "description": "High Quality [480p]",
+    "container": "mp4",
+    "resolution": "854 x 480",
+    "frame_rate": "24.194 fps",
+    "video_format": "AVC (MPEG4 H.264)",
+    "audio": "Stereo, 44.1 KHz 128 Kbps",
+    "audio_format": "AAC",
+    "type": "Main Stream"
+  },
   "82": {
     "container": "mp4",
+    "description": "Medium Quality [360p][3D]",
     "resolution": "640 x 360 [3D]",
     "frame_rate": "25 fps",
     "video_format": "AVC (MPEG4 H.264)",
@@ -121,11 +143,13 @@
   },
   "83": {
     "container": "mp4",
+    "description": "High Quality [480p][3D]",
     "resolution": "854 x 480 [3D]",
     "type": "3d Videos"
   },
   "84": {
     "container": "mp4",
+    "description": "HD High Quality [720p][3D]",
     "resolution": "1280 x 720 [3D]",
     "frame_rate": "25 fps",
     "video_format": "AVC (MPEG4 H.264)",
@@ -135,41 +159,58 @@
   },
   "85": {
     "container": "mp4",
+    "description": "HD High Quality [1080p][3D]",
     "resolution": "1920 x 1080p [3D]",
     "type": "3d Videos"
   },
+  "91": {
+    "container": "mp4",
+    "description": "Low Quality [144p]",
+    "resolution": "176 x 144",
+    "streaming_protocol": "HLS",
+    "video_format": "AVC (MPEG4 H.264)",
+    "audio_format": "AAC",
+    "audio": "Stereo, 44.1 KHz 48 Kbps",
+    "type": "Apple HTTP Live Streaming (HLS)"
+  },
   "92": {
     "container": "mp4",
+    "description": "Low Quality [240p]",
     "resolution": "320 x 240",
     "streaming_protocol": "HLS",
     "type": "Apple HTTP Live Streaming (HLS)"
   },
   "93": {
     "container": "mp4",
+    "description": "Medium Quality [360p]",
     "resolution": "640 x 360",
     "streaming_protocol": "HLS",
     "type": "Apple HTTP Live Streaming (HLS)"
   },
   "94": {
     "container": "mp4",
+    "description": "High Quality [480p]",
     "resolution": "854 x 480",
     "streaming_protocol": "HLS",
     "type": "Apple HTTP Live Streaming (HLS)"
   },
   "95": {
     "container": "mp4",
+    "description": "HD High Quality [720p]",
     "resolution": "1280 x 720",
     "streaming_protocol": "HLS",
     "type": "Apple HTTP Live Streaming (HLS)"
   },
   "96": {
     "container": "mp4",
+    "description": "HD High Quality [1080p]",
     "resolution": "1920 x 1080",
     "streaming_protocol": "HLS",
     "type": "Apple HTTP Live Streaming (HLS)"
   },
   "100": {
     "container": "webm",
+    "description": "Medium Quality [360p][3D]",
     "resolution": "640 x 360 [3D]",
     "frame_rate": "24.194 fps",
     "video_format": "VP8",
@@ -179,16 +220,42 @@
   },
   "101": {
     "container": "webm",
+    "description": "High Quality [480p][3D]",
     "resolution": "854 x 480 [3D]",
     "type": "3d Videos"
   },
   "102": {
     "container": "webm",
+    "description": "HD High Quality [720p][3D]",
     "resolution": "1280 x 720 [3D]",
     "type": "3d Videos"
   },
+  "120": {
+    "description": "HD High Quality [720p]",
+    "container": "flv",
+    "resolution": "1280 x 720",
+    "video_format": "H.264",
+    "audio": "Stereo, 22.05 KHz 128 Kbps",
+    "audio_format": "AAC",
+    "type": "Main Stream"
+  },
+  "127": {
+    "container": "ts",
+    "audio": "Stereo, 44.1 KHz 96.0 Kbps",
+    "audio_format": "AAC [DASH audio]",
+    "video_format": null,
+    "type": "Dash TS Audio"
+  },
+  "128": {
+    "container": "ts",
+    "audio": "Stereo, 44.1 KHz 96.0 Kbps",
+    "audio_format": "AAC [DASH audio]",
+    "video_format": null,
+    "type": "Dash TS Audio"
+  },
   "132": {
     "container": "mp4",
+    "description": "Low Quality [240p]",
     "resolution": "320 x 240",
     "streaming_protocol": "HLS",
     "type": "Apple HTTP Live Streaming (HLS)"
@@ -311,6 +378,14 @@
     "video_format": null,
     "type": "Dash WEBM Audio"
   },
+  "212": {
+    "container": "mp4",
+    "resolution": "854 x 480",
+    "video_format": "AVC (MPEG4 H.264)",
+    "video_type": "DASH video",
+    "audio": null,
+    "type": "DASH MP4 video"
+  },
   "218": {
     "container": "webm",
     "resolution": "854 x 480",
@@ -374,6 +449,39 @@
     "audio": null,
     "type": "Dash WEBM Video"
   },
+  "249": {
+    "container": "webm",
+    "audio": "Stereo, 44.1 KHz 50 Kbps",
+    "audio_format": "OPUS [DASH audio]",
+    "video_format": null,
+    "type": "Dash WEBM Audio"
+  },
+  "250": {
+    "container": "webm",
+    "audio": "Stereo, 44.1 KHz 70 Kbps",
+    "audio_format": "OPUS [DASH audio]",
+    "video_format": null,
+    "type": "Dash WEBM Audio"
+  },
+  "251": {
+    "container": "webm",
+    "audio": "Stereo, 44.1 KHz 160 Kbps",
+    "audio_format": "OPUS [DASH audio]",
+    "video_format": null,
+    "type": "Dash WEBM Audio"
+  },
+  "256": {
+    "container": "m4a",
+    "audio_format": "AAC [DASH audio]",
+    "video_format": null,
+    "type": "Dash MP4 Audio"
+  },
+  "258": {
+    "container": "m4a",
+    "audio_format": "AAC [DASH audio]",
+    "video_format": null,
+    "type": "Dash MP4 Audio"
+  },
   "264": {
     "container": "mp4",
     "resolution": "176 x 1440",
@@ -400,6 +508,13 @@
     "container": "webm",
     "resolution": "* x 2160",
     "video_type": "VP8 DASH video",
+    "audio": null,
+    "type": "Dash WEBM Video"
+  },
+  "278": {
+    "container": "webm",
+    "resolution": "* x 144",
+    "video_type": "VP9 DASH video",
     "audio": null,
     "type": "Dash WEBM Video"
   },
@@ -458,5 +573,17 @@
     "video_type": "VP9 DASH video",
     "audio": null,
     "type": "Dash WEBM Video"
+  },
+  "325": {
+    "container": "m4a",
+    "audio_format": "DTSE [DASH audio]",
+    "video_format": null,
+    "type": "Dash MP4 Audio"
+  },
+  "328": {
+    "container": "m4a",
+    "audio_format": "EC-3 [DASH audio]",
+    "video_format": null,
+    "type": "Dash MP4 Audio"
   }
 }

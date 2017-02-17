@@ -565,15 +565,15 @@ class YoutubeDownloader
 	 *
 	 * @throws YoutubeException If Video ID or Playlist Id is wrong or not exists anymore or it's not viewable anyhow
 	 *
-	 * @param bool $getDownloadLinksForPlaylist Also get download links and images for each video of playlists
+	 * @param bool $getDownloadLinks Also get download links and images for each video
 	 * @return object           Video's title, images, video length, download links, ... or Playlist's title, author, videos, ...
 	 */
-	public function getInfo($getDownloadLinksForPlaylist=false)
+	public function getInfo($getDownloadLinks=false)
 	{
 		try {
 			if ($this->isPlaylist)
-				return $this->getPlaylistInfo($getDownloadLinksForPlaylist);
-			return $this->getVideoInfo();
+				return $this->getPlaylistInfo($getDownloadLinks);
+			return $this->getVideoInfo($getDownloadLinks);
 		} catch (YoutubeException $e) {
 			throw $e;
 		}

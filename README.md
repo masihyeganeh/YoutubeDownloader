@@ -67,9 +67,9 @@ the `getInfo()` method will call `getVideoInfo()` or `getPlaylistInfo()` accordi
 
 `getPlaylistInfo()` method will return an object containing title, description, author, videos, views, likes, dislikes, ...
 
-Both `getInfo(true)` and `getPlaylistInfo(true)` can get an optional boolean parameter to get result of `getVideoInfo()` for each videos in playlists.
+Both `getInfo(true)` and `getPlaylistInfo(true)` can get an optional boolean parameter to get result of `getVideoInfo()` for each video.
   
-Video urls can be in these formats (Vevo videos are also supported):
+Video urls can be in these formats (Vevo videos are also supported, but cannot be downloaded in all countries):
 * `gmFn62dr0D8` (Video Id)
 * `http://www.youtube.com/watch?v=gmFn62dr0D8`
 * `http://www.youtube.com/embed/gmFn62dr0D8`

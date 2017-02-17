@@ -367,7 +367,7 @@
   "171": {
     "container": "webm",
     "audio": "Stereo, 44.1 KHz 128 Kbps",
-    "audio_format": "AAC [DASH audio]",
+    "audio_format": "Vorbis [DASH audio]",
     "video_format": null,
     "type": "Dash WEBM Audio"
   },

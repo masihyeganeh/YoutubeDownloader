@@ -1,6 +1,14 @@
 Changelog
 =========
 
+2.8.5
+-----
+
+*Date: 2017-03-17*
+
+* File name sanitizing added
+* CLI file names' underscores replaced with space
+
 2.8.4
 -----
 

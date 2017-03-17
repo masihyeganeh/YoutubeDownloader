@@ -173,6 +173,23 @@ $youtube->onFinalized = function ($filePath, $index, $count) {
 
 $youtube->download();
 ```
+
+### Filename Sanitizing
+
+File names are consist of video title and format extension. Video titles can contain any character but filesystems doesn't allow all characters.
+So filename should be sanitized first. by default there is a public method named `pathSafeFilename` that replaces unwanted characters (including space) to underscore (`_`).
+If you are not happy with this method, you can set a closure for `sanitizeFileName` property that receives a filename and returns sanitized filename.
+
+```php
+<?php
+$youtube = new YoutubeDownloader('PLbjM1u8Yb9I0rK4hkPa9TWe4N_idJOnrJ');
+
+$this->sanitizeFileName = function ($fileName) use ($youtube) {
+    return str_replace('_', ' ', $youtube->pathSafeFilename($fileName));
+};
+
+$youtube->download();
+```
    
 ### Caption (Subtitle)
 

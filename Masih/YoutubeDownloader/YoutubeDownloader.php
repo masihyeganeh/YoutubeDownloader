@@ -6,7 +6,7 @@
  * @author Masih Yeganeh <masihyeganeh@outlook.com>
  * @package YoutubeDownloader
  *
- * @version 2.8.4
+ * @version 2.8.5
  * @license http://opensource.org/licenses/MIT MIT
  */
 
@@ -141,6 +141,12 @@ class YoutubeDownloader
 	public $onFinalized;
 
 	/**
+	 * Callable function that is called for sanitizing filename
+	 * @var callable
+	 */
+	public $sanitizeFileName;
+
+	/**
 	 * Instantiates a YoutubeDownloader with a random User-Agent
 	 *
 	 * @param  string $videoUrl Full Youtube video url or just video ID
@@ -163,6 +169,7 @@ class YoutubeDownloader
 		$this->onComplete = function ($filePath, $fileSize) {};
 		$this->onProgress = function ($downloadedBytes, $fileSize) {};
 		$this->onFinalized = function () {};
+		$this->sanitizeFileName = function ($fileName) {return $this->pathSafeFilename($fileName);};
 
 		$this->videoId = $this->getVideoIdFromUrl($videoUrl);
 		$this->playlistId = $this->getPlaylistIdFromUrl($videoUrl);
@@ -474,7 +481,8 @@ class YoutubeDownloader
 		if (isset($data['has_cc']) && $data['has_cc'] === 'True')
 			$result['captions'] = $this->getCaptions($data, $detailed);
 
-		$filename = $this->pathSafeFilename($result['title']);
+		$sanitizer = &$this->sanitizeFileName;
+		$filename = $sanitizer($result['title']);
 
 		$isLive = false;
 
@@ -503,6 +511,7 @@ class YoutubeDownloader
 							$stream_maps[$key]['s'], // Encrypted signature,
 							$data['decryptionObject'] // Decryption object
 						);
+						// TODO: $stream_maps[$key]['url'] .= '&title=' . urlencode($fileName)
 					} catch (YoutubeException $e) {
 						throw $e;
 					}
@@ -532,6 +541,7 @@ class YoutubeDownloader
 							$adaptive_fmts[$key]['s'], // Encrypted signature,
 							$data['decryptionObject'] // Decryption object
 						);
+						// TODO: $adaptive_fmts[$key]['url'] .= '&title=' . urlencode($fileName)
 					} catch (YoutubeException $e) {
 						throw $e;
 					}
@@ -758,7 +768,7 @@ EOF;
 	 * @todo Use .net framework's Path.GetInvalidPathChars() for a better function
 	 * @todo Handle UTF-8 file names at least in windows
 	 */
-	protected function pathSafeFilename($string)
+	public function pathSafeFilename($string)
 	{
 		$string = str_replace(
 			array_merge(range(chr(0), chr(31)), str_split("#%+&`‘/<>:\"/|?*\x5C\x7F")),

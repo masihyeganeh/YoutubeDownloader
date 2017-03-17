@@ -144,6 +144,9 @@ if ($cmd[0] === null) {
 	$youtube = null;
 	try {
 		$youtube = new YoutubeDownloader($cmd[0]);
+		$this->sanitizeFileName = function ($fileName) use ($youtube) {
+			return str_replace('_', ' ', $youtube->pathSafeFilename($fileName));
+		};
 	} catch (YoutubeException $e) {
 		$cmd->error($e);
 	}

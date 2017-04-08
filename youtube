@@ -69,7 +69,7 @@ function parseFloatTime($time)
 $cmd = new Command();
 
 $cmd->setHelp(<<<EOF
-To download video or playlist : youtube [-i 22] [-c [-l en] [-f srt]] Media
+To download video or playlist : youtube [-i 22] [-c [-l en] [-f srt]] [-n] Media
 e.g. to download video with default output type without caption and resume if partially downloaded : youtube -r gmFn62dr0D8
 e.g. to download 720p video with english caption in sub format : youtube -i 22 -c -l en -f sub 'https://www.youtube.com/watch?v=gmFn62dr0D8'
 
@@ -120,6 +120,11 @@ $cmd->option('f')
 	})
 	->default('srt');
 
+$cmd->flag('n')
+	->aka('dont-edit-metatags')
+	->describedAs('Don\'t edit meta tags of MP4 files')
+	->boolean();
+
 if ($cmd[0] === null) {
 	if ($cmd['t']) {
 		$vars = array('description', 'container', 'resolution', 'type', 'video_type', 'video_format', 'frame_rate', 'audio', 'audio_format', 'streaming_protocol');
@@ -144,6 +149,7 @@ if ($cmd[0] === null) {
 	$youtube = null;
 	try {
 		$youtube = new YoutubeDownloader($cmd[0]);
+		$youtube->enableMp4Editing(!$cmd['n']);
 		$youtube->sanitizeFileName = function ($fileName) use ($youtube) {
 			return str_replace('_', ' ', $youtube->pathSafeFilename($fileName));
 		};

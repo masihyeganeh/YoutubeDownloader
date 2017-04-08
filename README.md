@@ -157,7 +157,7 @@ $youtube->download();
 ### Finalized
 
 After completing download, Finalized event will be fired. it is available via `onFinalized` parameter.
-it's a closure and has three parameters `$filePath`, `$index` and `$count`.
+it's a closure and has four parameters `$filePath`, `$fileSize`, `$index` and `$count`.
 `$index` and `$count` are `1` for single videos.
 
 ```php
@@ -165,7 +165,7 @@ it's a closure and has three parameters `$filePath`, `$index` and `$count`.
 $youtube = new YoutubeDownloader('PLbjM1u8Yb9I0rK4hkPa9TWe4N_idJOnrJ');
 
 
-$youtube->onFinalized = function ($filePath, $index, $count) {
+$youtube->onFinalized = function ($filePath, $fileSize, $index, $count) {
     if ($count > 1) echo '[' . $index . ' of ' . $count . ' videos] ';
 	echo $filePath . ' Finalized' . PHP_EOL;
 };

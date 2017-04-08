@@ -1,6 +1,14 @@
 Changelog
 =========
 
+2.8.6
+-----
+
+*Date: 2017-04-08*
+
+* Added an option to CLI to disable mp4 file meta tag edit
+* Some bugs fixed
+
 2.8.5
 -----
 

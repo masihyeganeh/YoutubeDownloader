@@ -6,7 +6,7 @@
  * @author Masih Yeganeh <masihyeganeh@outlook.com>
  * @package YoutubeDownloader
  *
- * @version 2.8.5
+ * @version 2.8.6
  * @license http://opensource.org/licenses/MIT MIT
  */
 
@@ -456,18 +456,18 @@ class YoutubeDownloader
 				throw new YoutubeException($data['reason'], $data['errorcode']);
 		}
 
-		$result['title'] = $data['title'];
+		$result['title'] = trim($data['title']);
 		$result['image'] = array(
-			'max_resolution' => 'https://i1.ytimg.com/vi/' . $this->videoId . '/maxresdefault.jpg',
-			'high_quality' => 'https://i1.ytimg.com/vi/' . $this->videoId . '/hqdefault.jpg',
-			'medium_quality' => 'https://i1.ytimg.com/vi/' . $this->videoId . '/mqdefault.jpg',
-			'standard' => 'https://i1.ytimg.com/vi/' . $this->videoId . '/sddefault.jpg',
+			'max_resolution' => 'https://i.ytimg.com/vi/' . $this->videoId . '/maxresdefault.jpg',
+			'high_quality' => 'https://i.ytimg.com/vi/' . $this->videoId . '/hqdefault.jpg',
+			'medium_quality' => 'https://i.ytimg.com/vi/' . $this->videoId . '/mqdefault.jpg',
+			'standard' => 'https://i.ytimg.com/vi/' . $this->videoId . '/sddefault.jpg',
 			'thumbnails' => array(
-				'https://i1.ytimg.com/vi/' . $this->videoId . '/default.jpg',
-				'https://i1.ytimg.com/vi/' . $this->videoId . '/0.jpg',
-				'https://i1.ytimg.com/vi/' . $this->videoId . '/1.jpg',
-				'https://i1.ytimg.com/vi/' . $this->videoId . '/2.jpg',
-				'https://i1.ytimg.com/vi/' . $this->videoId . '/3.jpg'
+				'https://i.ytimg.com/vi/' . $this->videoId . '/default.jpg',
+				'https://i.ytimg.com/vi/' . $this->videoId . '/0.jpg',
+				'https://i.ytimg.com/vi/' . $this->videoId . '/1.jpg',
+				'https://i.ytimg.com/vi/' . $this->videoId . '/2.jpg',
+				'https://i.ytimg.com/vi/' . $this->videoId . '/3.jpg'
 			)
 		);
 		$result['length_seconds'] = $data['length_seconds'];
@@ -475,7 +475,7 @@ class YoutubeDownloader
 		$result['video_id'] = $data['video_id'];
 		$result['views'] = $data['view_count'];
 		$result['rating'] = round($data['avg_rating']);
-		$result['author'] = $data['author'];
+		$result['author'] = trim($data['author']);
 
 		$result['captions'] = array();
 		if (isset($data['has_cc']) && $data['has_cc'] === 'True')
@@ -980,7 +980,7 @@ EOF;
 		$videosCount = $this->isPlaylist ? count($this->playlistInfo->video) : 1;
 
 		$onFinalized = $this->onFinalized;
-		$onFinalized($file, $this->currentDownloadingVideoIndex, $videosCount);
+		$onFinalized($filePath, filesize($filePath), $this->currentDownloadingVideoIndex, $videosCount);
 	}
 
 	/**

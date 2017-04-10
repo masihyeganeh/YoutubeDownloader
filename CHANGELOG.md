@@ -1,6 +1,13 @@
 Changelog
 =========
 
+2.8.7
+-----
+
+*Date: 2017-04-10*
+
+* Zend-mp3 file lock bug fixed
+
 2.8.6
 -----
 

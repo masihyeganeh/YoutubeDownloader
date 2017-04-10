@@ -37,10 +37,6 @@
         "psr-0": {"Masih": ""}
     },
 
-    "scripts": {
-        "pre-autoload-dump": "Masih\\YoutubeDownloader\\PostInstall::postPackageInstall"
-    },
-
     "bin": [
         "youtube"
     ]

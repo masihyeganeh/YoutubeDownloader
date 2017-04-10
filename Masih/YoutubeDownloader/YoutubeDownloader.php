@@ -122,6 +122,12 @@ class YoutubeDownloader
 	protected $mp4EditingEnabled = false; // TODO: Enable this when MP4 module is stable
 
 	/**
+	 * Auto close edited Mp4 files
+	 * @var boolean
+	 */
+	protected $autoCloseEditedMp4Files = false; // TODO: Delete this if debach's zend-mp3 bug fixes
+
+	/**
 	 * Callable function that is called on download progress
 	 * @var callable
 	 * @todo This shows wrong number for files with above 2GB size
@@ -976,7 +982,7 @@ EOF;
 				rename($tempFilePath, $filePath); // Restore backup file in case of error
 			}
 
-			if ($file) {
+			if ($file && $this->autoCloseEditedMp4Files) {
 				$file->__destruct();
 				$file = null;
 			}
@@ -1121,10 +1127,12 @@ EOF;
 	 * Sets default caption format
 	 *
 	 * @param  boolean $enable Enables or disables use of mp4 editing
+	 * @param  boolean $autoClose Auto close edited Mp4 file (Underlying package has a bug. Use at your own risk)
 	 */
-	public function enableMp4Editing($enable)
+	public function enableMp4Editing($enable, $autoClose=false)
 	{
 		$this->mp4EditingEnabled = !!$enable;
+		$this->autoCloseEditedMp4Files = !!$autoClose;
 	}
 
 	/**

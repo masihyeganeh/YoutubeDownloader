@@ -271,10 +271,13 @@ class Mp4
 		$this->enableNotices();
 	}
 
-    public function __destruct()
-    {
-        $this->mp4 = null;
-    }
+	public function __destruct()
+	{
+		if ($this->mp4) {
+			$this->mp4->__destruct();
+			$this->mp4 = null;
+		}
+	}
 
 	public function getFPS() {
 		$movieHeader = $this->mp4->moov->mvhd;

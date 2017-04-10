@@ -973,7 +973,12 @@ EOF;
 				unlink($tempFilePath);
 			} catch (\Zend_Media_Iso14496_Exception $e) {
 				$file = null;
-				rename($tempFilePath, $filePath);
+				rename($tempFilePath, $filePath); // Restore backup file in case of error
+			}
+
+			if ($file) {
+				$file->__destruct();
+				$file = null;
 			}
 		}
 

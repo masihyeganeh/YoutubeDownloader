@@ -109,7 +109,7 @@ $youtube->download();
 ```
 
 Second parameter of `download` method is a boolean named `$resume`. When it is `true`, it will continue downloading videos that are partially downloaded last time.
-Thirt parameter of `download` method is a mixed named `$caption`. When it is `false` (default), it will not download caption (subtitle). When it is `null`, it will download caption in default language (english). Else, it should be a name of language. See Caption section below.
+Third parameter of `download` method is a mixed named `$caption`. When it is `false` (default), it will not download caption (subtitle). When it is `null`, it will download caption in default language (english). Else, it should be a name of language. See Caption section below.
    
 ### Download progress
 

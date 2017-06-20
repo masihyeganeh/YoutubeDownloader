@@ -6,7 +6,7 @@
  * @author Masih Yeganeh <masihyeganeh@outlook.com>
  * @package YoutubeDownloader
  *
- * @version 2.8.8
+ * @version 2.8.9
  * @license http://opensource.org/licenses/MIT MIT
  */
 
@@ -383,7 +383,10 @@ class YoutubeDownloader
 		$result = array();
 
 		try {
-			$response = $this->getUrl('https://www.youtube.com/get_video_info?video_id=' . $this->videoId);
+			$response = $this->getUrl('https://www.youtube.com/get_video_info?' . http_build_query(array(
+				'video_id' => $this->videoId,
+				'eurl'     => 'https://youtube.googleapis.com/v/' . $this->videoId
+			)));
 		} catch (YoutubeException $e) {
 			throw $e;
 		}

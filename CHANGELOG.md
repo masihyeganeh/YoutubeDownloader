@@ -1,6 +1,13 @@
 Changelog
 =========
 
+2.8.9
+-----
+
+*Date: 2017-06-20*
+
+* Age-restricted videos are supported now
+
 2.8.8
 -----
 

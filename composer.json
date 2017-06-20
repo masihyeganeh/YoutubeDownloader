@@ -29,7 +29,7 @@
     },
 
     "require-dev": {
-        "janmarek/mockista": "dev-master",
+        "janmarek/mockista": "1.1.*",
         "satooshi/php-coveralls": "dev-master"
     },
 

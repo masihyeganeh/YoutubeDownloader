@@ -8,6 +8,21 @@ Changelog
 
 * Encrypted videos download algorithm improved
 
+2.8.9
+-----
+
+*Date: 2017-06-20*
+
+* Age-restricted videos are supported now
+
+2.8.8
+-----
+
+*Date: 2017-04-22*
+
+* More ciphered videos can be downloaded now
+* A typo fixed in README (Thanks to Malte Blättermann)
+
 2.8.7
 -----
 

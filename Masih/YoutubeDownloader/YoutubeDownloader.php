@@ -383,7 +383,10 @@ class YoutubeDownloader
 		$result = array();
 
 		try {
-			$response = $this->getUrl('https://www.youtube.com/get_video_info?video_id=' . $this->videoId);
+			$response = $this->getUrl('https://www.youtube.com/get_video_info?' . http_build_query(array(
+				'video_id' => $this->videoId,
+				'eurl'     => 'https://youtube.googleapis.com/v/' . $this->videoId
+			)));
 		} catch (YoutubeException $e) {
 			throw $e;
 		}
@@ -397,7 +400,11 @@ class YoutubeDownloader
 		$usingCipheredSignature = false;
 		if ($failed) {
 			if (isset($data['errorcode'])) $usingCipheredSignature = ($data['errorcode'] == '150');
-		}elseif (isset($data['use_cipher_signature']) && $data['use_cipher_signature'] == 'True') {
+		} elseif (
+			(isset($data['use_cipher_signature']) && $data['use_cipher_signature'] == 'True') ||
+			(isset($data['probe_url']) && stripos($data['probe_url'], '&signature=') !== false) ||
+			(isset($data['fflags']) && stripos($data['fflags'], 'html5_progressive_signature_reload=true') !== false)
+		) {
 			$usingCipheredSignature = true;
 			$failed = true;
 		}

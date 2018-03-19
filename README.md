@@ -8,7 +8,6 @@ Youtube video downloader
 [![Latest Unstable Version](https://poser.pugx.org/masih/youtubedownloader/v/unstable)](https://packagist.org/packages/masih/youtubedownloader)
 [![Coverage Status](https://coveralls.io/repos/github/masihyeganeh/YoutubeDownloader/badge.svg?branch=master)](https://coveralls.io/github/masihyeganeh/YoutubeDownloader?branch=master)
 [![Total Downloads](https://poser.pugx.org/masih/youtubedownloader/downloads)](https://packagist.org/packages/masih/youtubedownloader)
-[![Dependency Status](https://www.versioneye.com/user/projects/5281d3db632baca88e000127/badge.svg)](https://www.versioneye.com/user/projects/5281d3db632baca88e000127)
 [![License](https://poser.pugx.org/masih/youtubedownloader/license)](https://packagist.org/packages/masih/youtubedownloader)
 
 
@@ -29,7 +28,7 @@ Youtube Downloader is PSR-0 compliant and can be installed using [composer](http
 ```json
     {
         "require": {
-            "masih/youtubedownloader": "~2.8"
+            "masih/youtubedownloader": "~2.9.0"
         }
     }
 ```
@@ -37,6 +36,19 @@ Youtube Downloader is PSR-0 compliant and can be installed using [composer](http
 and run `composer update` command
 
 Needs PHP 5.5 or newer. Tested with PHP 5.5, 5.6, 7.0, 7.1, hhvm and nightly
+
+
+By default videos will download to `videos` folder, if you want to change it,
+you should use `setPath` method.
+```php
+<?php
+// ...
+$youtube->setPath('/path/to/folder'); // without trailing slash
+```
+
+When you install it as a dependency, there need to be a `cache` directory beside `vendor`
+and it should be writable (e.g. `chmod 777`).
+
 
 Usage
 -----

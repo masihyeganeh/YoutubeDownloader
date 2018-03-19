@@ -6,7 +6,7 @@
  * @author Masih Yeganeh <masihyeganeh@outlook.com>
  * @package YoutubeDownloader
  *
- * @version 2.8.10
+ * @version 2.9.0
  * @license http://opensource.org/licenses/MIT MIT
  */
 

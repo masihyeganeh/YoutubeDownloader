@@ -6,7 +6,7 @@
  * @author Masih Yeganeh <masihyeganeh@outlook.com>
  * @package YoutubeDownloader
  *
- * @version 2.8.10
+ * @version 2.9.0
  * @license http://opensource.org/licenses/MIT MIT
  */
 
@@ -399,7 +399,10 @@ class YoutubeDownloader
 		$failed = (isset($data['status']) && $data['status'] == 'fail');
 		$usingCipheredSignature = false;
 		if ($failed) {
-			if (isset($data['errorcode'])) $usingCipheredSignature = ($data['errorcode'] == '150');
+			if (isset($data['errorcode']) && $data['errorcode'] == '150')
+				$usingCipheredSignature = true;
+			else
+				throw new YoutubeException($data['reason'], $data['errorcode']);
 		} elseif (
 			(isset($data['use_cipher_signature']) && $data['use_cipher_signature'] == 'True') ||
 			(isset($data['probe_url']) && stripos($data['probe_url'], '&signature=') !== false) ||
@@ -428,7 +431,7 @@ class YoutubeDownloader
 					$ytconfig = $ytconfig['content']['swfcfg'];
 				} elseif (preg_match('/ytplayer.config\s*=\s*([^\n]+});ytplayer/i', $response, $matches)) {
 					$ytconfig = json_decode($matches[1], true);
-				} elseif (preg_match('/\'class="message">([^<]+)<\'/i', $response, $matches)) {
+				} elseif (preg_match('/class="message">([^<]+)</i', $response, $matches)) {
 					throw new YoutubeException(trim($matches[1]), 10);
 				}
 

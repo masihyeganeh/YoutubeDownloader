@@ -1,6 +1,16 @@
 Changelog
 =========
 
+2.9.0
+------
+
+*Date: 2018-03-19*
+
+* New minor version
+* Encrypted videos download algorithm improved
+* _cache_ folder path changed. If you install it as a dependency,
+_cache_ folder should be beside of _vendor_ folder
+
 2.8.10
 ------
 

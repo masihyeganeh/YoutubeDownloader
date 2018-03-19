@@ -6,7 +6,7 @@
  * @author Masih Yeganeh <masihyeganeh@outlook.com>
  * @package YoutubeDownloader
  *
- * @version 2.8.10
+ * @version 2.9.0
  * @license http://opensource.org/licenses/MIT MIT
  */
 
@@ -27,8 +27,16 @@ class JsDecoder
 	function __construct($jsCodeUrl) {
 		if (empty($jsCodeUrl))
 			throw new YoutubeException('js code URL is empty', 12);
+		$this->path = realpath('');
+		if (file_exists(__DIR__.'/../../../../autoload.php')) // Installed as dependency
+			$this->path = realpath(__DIR__.'/../../../../../');
+		if (defined('GLOBAL_DOWNLOADER') || file_exists(__DIR__.'/../../vendor/autoload.php'))
+			$this->path = realpath(__DIR__.'/../../'); // Downloaded or Installed globally
+		$this->path .= DIRECTORY_SEPARATOR . 'cache' . DIRECTORY_SEPARATOR;
 
-		$this->path = dirname(dirname(dirname(__FILE__))) . DIRECTORY_SEPARATOR . 'cache' . DIRECTORY_SEPARATOR;
+		if (!file_exists($this->path))
+			@mkdir($this->path, 0777, true);
+
 		$this->urlHash = strtolower(md5($jsCodeUrl));
 		$this->prefix = '___decryption_' . $this->urlHash . '_';
 
@@ -74,7 +82,7 @@ class JsDecoder
 
 	protected function getFunction($name) {
 		$phpCode = &$this->phpCode;
-        preg_replace_callback('/\n\s*function\s*' . $name .'\s*\(([^\),]+)\)\s*{([^}]*)};?|\n\s*' . $name . '\s*=\s*function\s*\(([^\),]+)\)\s*{([^}]*)};/', function ($matches) use (&$phpCode) {
+		preg_replace_callback('/\nfunction\s*' . $name .'\s*\(([^\)]*)\)\s*{([^}]*)};?|\n' . $name . '\s*=\s*function\s*\(([^\)]*)\)\s*{([^}]*)};/', function ($matches) use (&$phpCode) {
 			$args = preg_split('/\s*,\s*/', $matches[2] ?: $matches[3]);
 			$code = $matches[4];
 			foreach ($args as &$arg) {
@@ -173,7 +181,8 @@ class JsDecoder
 		$this->v8jsCode = $code;
 
 		$file = $this->path . $this->urlHash . 'j';
-		file_put_contents($file, $this->v8jsCode);
+		if (file_exists($this->path))
+			file_put_contents($file, $this->v8jsCode);
 	}
 
 	protected function v8jsDecrypt($signature) {
@@ -205,6 +214,8 @@ class JsDecoder
 	protected function parsedCodeIsValid() {
 		$result = false;
 		$file = $this->path . $this->urlHash . 'p';
+		if (!file_exists($this->path)) return false;
+
 		file_put_contents($file, '<?php ' . $this->phpCode);
 
 		if (class_exists('ParseError')) {

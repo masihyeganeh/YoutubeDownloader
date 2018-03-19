@@ -6,7 +6,7 @@
  * @author Masih Yeganeh <masihyeganeh@outlook.com>
  * @package YoutubeDownloader
  *
- * @version 2.8.7
+ * @version 2.8.10
  * @license http://opensource.org/licenses/MIT MIT
  */
 
@@ -55,7 +55,7 @@ class JsDecoder
 		$this->code = $jsCode;
 		$this->objects = array();
 
-		if (preg_match('/\.set\("signature",\s*([\w\d]+)\(|\.sig\|\|([\w\d]+)\(/', $this->code, $matches)) {
+		if (preg_match('/\.set\([^"]+"signature",\s*([\w\d]+)\(|\.sig\|\|([\w\d]+)\(/', $this->code, $matches)) {
 			$signFunctionName = $matches[1];
 			$this->getFunction($signFunctionName);
 			$file = $this->path . $this->urlHash;
@@ -74,7 +74,7 @@ class JsDecoder
 
 	protected function getFunction($name) {
 		$phpCode = &$this->phpCode;
-		preg_replace_callback('/\nfunction\s*' . $name .'\s*\(([^\)]*)\)\s*{([^}]*)};?|\n' . $name . '\s*=\s*function\s*\(([^\)]*)\)\s*{([^}]*)};/', function ($matches) use (&$phpCode) {
+        preg_replace_callback('/\n\s*function\s*' . $name .'\s*\(([^\),]+)\)\s*{([^}]*)};?|\n\s*' . $name . '\s*=\s*function\s*\(([^\),]+)\)\s*{([^}]*)};/', function ($matches) use (&$phpCode) {
 			$args = preg_split('/\s*,\s*/', $matches[2] ?: $matches[3]);
 			$code = $matches[4];
 			foreach ($args as &$arg) {

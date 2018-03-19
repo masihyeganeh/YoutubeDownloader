@@ -1,6 +1,13 @@
 Changelog
 =========
 
+2.8.10
+------
+
+*Date: 2018-03-19*
+
+* Encrypted videos download algorithm improved
+
 2.8.7
 -----
 

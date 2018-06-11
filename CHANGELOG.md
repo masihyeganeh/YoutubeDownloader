@@ -1,6 +1,14 @@
 Changelog
 =========
 
+2.9.1
+-----
+
+*Date: 2018-06-11*
+
+* Better UTF-8 handling
+* Better exception handling
+
 2.9.0
 ------
 

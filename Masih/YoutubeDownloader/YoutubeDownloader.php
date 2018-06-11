@@ -6,7 +6,7 @@
  * @author Masih Yeganeh <masihyeganeh@outlook.com>
  * @package YoutubeDownloader
  *
- * @version 2.9.0
+ * @version 2.9.1
  * @license http://opensource.org/licenses/MIT MIT
  */
 
@@ -21,7 +21,11 @@ use GuzzleHttp\Cookie\CookieJar;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Psr7\Request;
+use Patchwork\Utf8;
+use Patchwork\Utf8\Bootup;
 use Psr\Http\Message\ResponseInterface;
+
+Bootup::initAll();
 
 class YoutubeDownloader
 {
@@ -165,6 +169,8 @@ class YoutubeDownloader
 	 * @example var downloader = new YoutubeDownloader('https://www.youtube.com/watch?v=7gY_sq9uOmw&list=PLbjM1u8Yb9I0rK4hkPa9TWe4N_idJOnrJ');
 	 * @example var downloader = new YoutubeDownloader('https://www.youtube.com/playlist?list=PLbjM1u8Yb9I0rK4hkPa9TWe4N_idJOnrJ');
 	 * @example var downloader = new YoutubeDownloader('https://www.youtube.com/embed/videoseries?list=PLbjM1u8Yb9I0rK4hkPa9TWe4N_idJOnrJ');
+	 * @throws YoutubeException
+	 * @throws \Exception
 	 */
 	public function __construct($videoUrl)
 	{
@@ -283,7 +289,7 @@ class YoutubeDownloader
 		try {
 			$url = 'https://www.youtube.com/list_ajax?style=json&action_get_list=1&list=' . $this->playlistId;
 			$response = $this->webClient->get($url);
-		} catch (GuzzleException $e) {
+		} catch (\Exception $e) {
 			if ($e instanceof ClientException && $e->hasResponse()) {
 				if ($e->getResponse()->getStatusCode()) return null;
 				throw new YoutubeException($e->getResponse()->getReasonPhrase(), 3);
@@ -331,7 +337,7 @@ class YoutubeDownloader
 	{
 		try {
 			$response = $this->webClient->get($url);
-		} catch (GuzzleException $e) {
+		} catch (\Exception $e) {
 			if ($e instanceof ClientException && $e->hasResponse())
 				throw new YoutubeException($e->getResponse()->getReasonPhrase(), 3);
 			else
@@ -578,12 +584,12 @@ class YoutubeDownloader
 
 		$result['video_url'] = 'https://www.youtube.com/watch?v=' . $this->videoId;
 
-		$result = (object) $result;
-		$this->videoInfo = $result;
+		$lastResult = (object) $result;
+		$this->videoInfo = $lastResult;
 
-		$result->response_type = 'video';
+		$lastResult->response_type = 'video';
 
-		return $result;
+		return $lastResult;
 	}
 
 	/**
@@ -640,7 +646,7 @@ class YoutubeDownloader
 	/**
 	 * Gets caption of Youtube video and returns it as an object
 	 *
-	 * @param  string $captionTrack Detailed caption track
+	 * @param  object $captionTrack Detailed caption track
 	 * @return object           Caption as an object
 	 */
 	protected function parseCaption($captionTrack)
@@ -649,7 +655,7 @@ class YoutubeDownloader
 
 		try {
 			$response = $this->webClient->get($captionTrack['u']);
-		} catch (GuzzleException $e) {
+		} catch (\Exception $e) {
 			if ($e instanceof ClientException && $e->hasResponse()) {
 				throw new YoutubeException($e->getResponse()->getReasonPhrase(), 3);
 			}
@@ -782,15 +788,15 @@ EOF;
 	 * @return string         Path Safe file name
 	 *
 	 * @todo Use .net framework's Path.GetInvalidPathChars() for a better function
-	 * @todo Handle UTF-8 file names at least in windows
 	 */
 	public function pathSafeFilename($string)
 	{
 		$string = str_replace(
-			array_merge(range(chr(0), chr(31)), str_split("#%+&`‘/<>:\"/|?*\x5C\x7F")),
+			array_merge(range(chr(0), chr(31)), str_split("#%+&`‘/<>:\"|?*\x5C\x7F")),
 			' ',
-			basename(trim($string))
+			trim($string)
 		);
+		$string = Utf8::filter($string);
 		$string = preg_replace('/\s{2,}/', ' ', $string);
 		$string = str_replace(array(' ', '%20'), '_', $string);
 		return $string;
@@ -821,6 +827,7 @@ EOF;
 	 * @param  string   $file Path of file to save to
 	 * @param  callable $onProgress Callback to be called on download progress
 	 * @param  callable $onFinish Callback to be called on download complete
+	 * @throws YoutubeException
 	 */
 	protected function downloadFile($url, $file, callable $onProgress, callable $onFinish)
 	{
@@ -855,6 +862,8 @@ EOF;
 
 		try {
 			$promise->wait();
+		} catch (ClientException $e) {
+			throw new YoutubeException('An error occurred when downloading video', 20, $e);
 		} catch (\RuntimeException $e) {
 			throw new YoutubeException('An error occurred when downloading video', 20, $e);
 		}
@@ -868,6 +877,7 @@ EOF;
 	 * @param  int  $itag   After calling {@see getVideoInfo()}, it returns various formats, each format has it's own itag. if no itag is passed or passed itag is not valid for the video, it will download the best quality of video
 	 * @param  boolean $resume If it should resume download if an uncompleted file exists or should download from beginning
 	 * @param  mixed $caption Caption language to download or null to download caption of default language. false to prevent download
+	 * @throws YoutubeException
 	 */
 	public function download($itag=null, $resume=false, $caption=false)
 	{
@@ -875,11 +885,10 @@ EOF;
 		if (!$this->isPlaylist) {
 			try {
 				$this->getVideoInfo(true);
+				$this->downloadVideo($itag, $resume, $caption);
 			} catch (YoutubeException $e) {
 				throw $e;
 			}
-
-			$this->downloadVideo($itag, $resume, $caption);
 		} else {
 			$i = 1;
 			foreach ($this->playlistInfo->video as $video)
@@ -892,7 +901,11 @@ EOF;
 					throw $e;
 				}
 
-				$this->downloadVideo($itag, $resume, $caption);
+				try {
+					$this->downloadVideo($itag, $resume, $caption);
+				} catch (YoutubeException $e) {
+					throw $e;
+				}
 			}
 		}
 	}
@@ -905,21 +918,30 @@ EOF;
 	 * @param  int  $itag   After calling {@see getVideoInfo()}, it returns various formats, each format has it's own itag. if no itag is passed or passed itag is not valid for the video, it will download the best quality of video
 	 * @param  boolean $resume If it should resume download if an uncompleted file exists or should download from beginning
 	 * @param  mixed $caption Caption language to download or null to download caption of default language. false to prevent download
+	 * @throws YoutubeException
 	 */
 	protected function downloadVideo($itag=null, $resume=false, $caption=false)
 	{
 		if ($itag) {
 			foreach ($this->videoInfo->full_formats as $video) {
 				if ($video->itag == $itag) {
-					$this->downloadFull($video->url, $video->filename, $resume);
-					$this->finalize($video->filename, $caption);
+					try {
+						$this->downloadFull($video->url, $video->filename, $resume);
+						$this->finalize($video->filename, $caption);
+					} catch (YoutubeException $e) {
+						throw $e;
+					}
 					return;
 				}
 			}
 
 			foreach ($this->videoInfo->adaptive_formats as $video) {
 				if ($video->itag == $itag) {
-					$this->downloadAdaptive($video->url, $video->filename, $video->clen, $resume);
+					try {
+						$this->downloadAdaptive($video->url, $video->filename, $video->clen, $resume);
+					} catch (YoutubeException $e) {
+						throw $e;
+					}
 					$this->finalize($video->filename, $caption);
 					return;
 				}
@@ -931,14 +953,23 @@ EOF;
 				throw new YoutubeException('There is no format for download', 32);
 			else {
 				$video = $this->videoInfo->adaptive_formats[0];
-				$this->downloadAdaptive($video->url, $video->filename, $video->clen, $resume);
-				$this->finalize($video->filename, $caption);
+				try {
+					$this->downloadAdaptive($video->url, $video->filename, $video->clen, $resume);
+					$this->finalize($video->filename, $caption);
+				} catch (YoutubeException $e) {
+					throw $e;
+				}
+
 			}
 		}
 
 		$video = $this->videoInfo->full_formats[0];
-		$this->downloadFull($video->url, $video->filename, $resume);
-		$this->finalize($video->filename, $caption);
+		try {
+			$this->downloadFull($video->url, $video->filename, $resume);
+			$this->finalize($video->filename, $caption);
+		} catch (YoutubeException $e) {
+			throw $e;
+		}
 	}
 
 	/**
@@ -969,7 +1000,7 @@ EOF;
 				$response = $this->webClient->get($this->videoInfo->image['medium_quality']);
 				if ($response->getStatusCode() == 200)
 					$file->setCover($response->getBody());
-			} catch (GuzzleException $e) {}
+			} catch (\Exception $e) {}
 
 			$file->setTrackName($this->videoInfo->title);
 			$file->setArtist($this->videoInfo->author);
@@ -1010,6 +1041,7 @@ EOF;
 	 * @param  string  $url    Video url given by {@see getVideoInfo()}
 	 * @param  string  $file   Path of file to save to
 	 * @param  boolean $resume If it should resume download if an uncompleted file exists or should download from beginning
+	 * @throws YoutubeException
 	 */
 	public function downloadFull($url, $file, $resume=false)
 	{
@@ -1023,21 +1055,25 @@ EOF;
 		$onComplete = &$this->onComplete;
 		$videosCount = $this->isPlaylist ? count($this->playlistInfo->video) : 1;
 
-		$this->downloadFile(
-			$url, $file,
-			function ($downloadSize, $downloaded) use (&$downloadedBytes, &$fileSize, $onProgress, $videosCount) {
-				if (!$downloaded && !$downloadSize) return 1;
-				if ($downloadedBytes != $downloaded)
-					$onProgress($downloaded, $downloadSize, $this->currentDownloadingVideoIndex, $videosCount);
+		try {
+			$this->downloadFile(
+				$url, $file,
+				function ($downloadSize, $downloaded) use (&$downloadedBytes, &$fileSize, $onProgress, $videosCount) {
+					if (!$downloaded && !$downloadSize) return 1;
+					if ($downloadedBytes != $downloaded)
+						$onProgress($downloaded, $downloadSize, $this->currentDownloadingVideoIndex, $videosCount);
 
-				$downloadedBytes = $downloaded;
-				$fileSize = $downloadSize;
-				return 0;
-			},
-			function ($downloadSize) use ($onComplete, $file, $videosCount) {
-				$onComplete($file, $downloadSize, $this->currentDownloadingVideoIndex, $videosCount);
-			}
-		);
+					$downloadedBytes = $downloaded;
+					$fileSize = $downloadSize;
+					return 0;
+				},
+				function ($downloadSize) use ($onComplete, $file, $videosCount) {
+					$onComplete($file, $downloadSize, $this->currentDownloadingVideoIndex, $videosCount);
+				}
+			);
+		} catch (YoutubeException $e) {
+			throw $e;
+		}
 	}
 
 	/**
@@ -1069,22 +1105,26 @@ EOF;
 
 		while ($size < $completeSize)
 		{
-			$this->downloadFile(
-				$url . '&range=' . $size . '-' . $completeSize, $file,
-				function ($downloadSize, $downloaded) use (&$downloadedBytes, &$fileSize, $onProgress, $videosCount)  {
-					if (!$downloaded && !$downloadSize) return 1;
-					if ($downloadedBytes != $downloaded)
-						$onProgress($downloaded, $downloadSize, $this->currentDownloadingVideoIndex, $videosCount);
+			try {
+				$this->downloadFile(
+					$url . '&range=' . $size . '-' . $completeSize, $file,
+					function ($downloadSize, $downloaded) use (&$downloadedBytes, &$fileSize, $onProgress, $videosCount)  {
+						if (!$downloaded && !$downloadSize) return 1;
+						if ($downloadedBytes != $downloaded)
+							$onProgress($downloaded, $downloadSize, $this->currentDownloadingVideoIndex, $videosCount);
 
-					$downloadedBytes = $downloaded;
-					$fileSize = $downloadSize;
+						$downloadedBytes = $downloaded;
+						$fileSize = $downloadSize;
 
-					return 0;
-				},
-				function ($downloadSize) use (&$size) {
-					$size += $downloadSize;
-				}
-			);
+						return 0;
+					},
+					function ($downloadSize) use (&$size) {
+						$size += $downloadSize;
+					}
+				);
+			} catch (YoutubeException $e) {
+				throw $e;
+			}
 
 			// Maybe we need to refresh download link each time
 		}

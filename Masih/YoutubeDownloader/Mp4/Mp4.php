@@ -6,7 +6,7 @@
  * @author Masih Yeganeh <masihyeganeh@outlook.com>
  * @package YoutubeDownloader
  *
- * @version 2.9.0
+ * @version 2.9.1
  * @license http://opensource.org/licenses/MIT MIT
  */
 
@@ -259,15 +259,31 @@ class Mp4
 		return str_pad(chr($num), $bits/8, chr(0), STR_PAD_LEFT);
 	}
 
+	/**
+	 * @throws \Zend_Media_Iso14496_Exception
+	 */
 	public function save() {
-		$this->saveAs(null);
+		try {
+			$this->saveAs(null);
+		} catch (\Zend_Media_Iso14496_Exception $e) {
+			throw $e;
+		}
 	}
 
+	/**
+	 * @param $ouputFile
+	 * @throws \Zend_Media_Iso14496_Exception
+	 */
 	public function saveAs($ouputFile) {
 		$this->addOrChangePlistMetaData();
 
 		$this->disableNotices();
-		$this->mp4->write($ouputFile);
+		try {
+			$this->mp4->write($ouputFile);
+		} catch (\Zend_Media_Iso14496_Exception $e) {
+			$this->enableNotices();
+			throw $e;
+		}
 		$this->enableNotices();
 	}
 

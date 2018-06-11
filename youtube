@@ -302,5 +302,5 @@ if ($cmd[0] === null) {
 		} catch (YoutubeException $exception) {
 			$cmd->error($exception);
 		}
-	}
+    }
 }

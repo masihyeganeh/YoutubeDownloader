@@ -6,7 +6,7 @@
  * @author Masih Yeganeh <masihyeganeh@outlook.com>
  * @package YoutubeDownloader
  *
- * @version 2.9.2
+ * @version 2.9.3
  * @license http://opensource.org/licenses/MIT MIT
  */
 
@@ -411,7 +411,8 @@ class YoutubeDownloader
 		} elseif (
 			(isset($data['use_cipher_signature']) && $data['use_cipher_signature'] == 'True') ||
 			(isset($data['probe_url']) && stripos($data['probe_url'], '&signature=') !== false) ||
-			(isset($data['fflags']) && stripos($data['fflags'], 'html5_progressive_signature_reload=true') !== false)
+			(isset($data['fflags']) && stripos($data['fflags'], 'html5_progressive_signature_reload=true') !== false) ||
+			(isset($data['token']) && $data['token'] == '1')
 		) {
 			$usingCipheredSignature = true;
 			$failed = true;

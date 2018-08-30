@@ -6,7 +6,7 @@
  * @author Masih Yeganeh <masihyeganeh@outlook.com>
  * @package YoutubeDownloader
  *
- * @version 2.9.1
+ * @version 2.9.2
  * @license http://opensource.org/licenses/MIT MIT
  */
 
@@ -14,7 +14,6 @@ namespace Masih\YoutubeDownloader;
 
 use Masih\YoutubeDownloader\Mp4\MediaTypes;
 use Masih\YoutubeDownloader\Mp4\Mp4;
-use Campo\UserAgent;
 use Dflydev\ApacheMimeTypes\FlatRepository;
 use GuzzleHttp\Client;
 use GuzzleHttp\Cookie\CookieJar;
@@ -157,7 +156,7 @@ class YoutubeDownloader
 	public $sanitizeFileName;
 
 	/**
-	 * Instantiates a YoutubeDownloader with a random User-Agent
+	 * Instantiates a YoutubeDownloader
 	 *
 	 * @param  string $videoUrl Full Youtube video url or just video ID
 	 * @example var downloader = new YoutubeDownloader('gmFn62dr0D8');
@@ -175,7 +174,7 @@ class YoutubeDownloader
 	public function __construct($videoUrl)
 	{
 		$this->webClient = new Client(array(
-			'headers' => array('User-Agent' => UserAgent::random())
+			'headers' => array('User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3534.4 Safari/537.36')
 		));
 
 		$this->onComplete = function ($filePath, $fileSize) {};
@@ -442,7 +441,7 @@ class YoutubeDownloader
 				}
 
 				$jsAsset = null;
-				if (preg_match('/<script src="([^"]+)" name="player\/base"><\/script>/i', $response, $matches)) {
+				if (preg_match('/<script\s*src="([^"]+)"\s*(type="text\/javascript")?\s*name="player\/base"\s*><\/script>/i', $response, $matches)) {
 					$jsAsset = $matches[1];
 				}
 

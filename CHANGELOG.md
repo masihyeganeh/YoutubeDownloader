@@ -4,6 +4,13 @@ Changelog
 2.9.1
 -----
 
+*Date: 2018-08-31*
+
+* Using constant User-Agent
+
+2.9.1
+-----
+
 *Date: 2018-06-11*
 
 * Better UTF-8 handling

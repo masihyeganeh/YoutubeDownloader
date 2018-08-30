@@ -22,7 +22,6 @@
         "php": ">=5.5.0",
         "guzzlehttp/guzzle": "~6.0",
         "dflydev/apache-mime-types": "1.0.*",
-        "campo/random-user-agent": "~1.2.0",
         "nategood/commando": "~0.2.8",
         "dariuszp/cli-progress-bar": "~1.0.2",
         "debach/zend-mp3": "~1.8.1",

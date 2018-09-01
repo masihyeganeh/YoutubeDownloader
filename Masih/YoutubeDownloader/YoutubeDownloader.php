@@ -6,7 +6,7 @@
  * @author Masih Yeganeh <masihyeganeh@outlook.com>
  * @package YoutubeDownloader
  *
- * @version 2.9.3
+ * @version 2.9.4
  * @license http://opensource.org/licenses/MIT MIT
  */
 
@@ -453,10 +453,12 @@ class YoutubeDownloader
 				}
 
 				if ($detailed && $jsAsset !== null) {
-					if (strlen($jsAsset) > 1 && substr($jsAsset, 0, 2) == '//')
-						$jsAsset = 'https:' . $jsAsset;
-					else
-						$jsAsset = 'https://s.ytimg.com' . $jsAsset;
+					if (stripos($jsAsset, 'https://') !== 0) {
+						if (strlen($jsAsset) > 1 && substr($jsAsset, 0, 2) == '//')
+							$jsAsset = 'https:' . $jsAsset;
+						else
+							$jsAsset = 'https://s.ytimg.com' . $jsAsset;
+					}
 					try {
 						$response = $this->getUrl($jsAsset);
 					} catch (YoutubeException $e) {

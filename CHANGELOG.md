@@ -1,6 +1,13 @@
 Changelog
 =========
 
+2.9.5
+-----
+
+*Date: 2018-10-28*
+
+* Encrypted videos download algorithm improved. Thanks to @sy2nyk
+
 2.9.3
 -----
 

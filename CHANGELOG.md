@@ -1,6 +1,13 @@
 Changelog
 =========
 
+2.9.6
+-----
+
+*Date: 2018-11-21*
+
+* view_count bugs and others fixed
+
 2.9.5
 -----
 

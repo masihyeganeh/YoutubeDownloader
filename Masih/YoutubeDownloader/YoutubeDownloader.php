@@ -6,7 +6,7 @@
  * @author Masih Yeganeh <masihyeganeh@outlook.com>
  * @package YoutubeDownloader
  *
- * @version 2.9.5
+ * @version 2.9.6
  * @license http://opensource.org/licenses/MIT MIT
  */
 
@@ -389,9 +389,9 @@ class YoutubeDownloader
 
 		try {
 			$response = $this->getUrl('https://www.youtube.com/get_video_info?' . http_build_query(array(
-				'video_id' => $this->videoId,
-				'eurl'     => 'https://youtube.googleapis.com/v/' . $this->videoId
-			)));
+					'video_id' => $this->videoId,
+					'eurl'     => 'https://youtube.googleapis.com/v/' . $this->videoId
+				)));
 		} catch (YoutubeException $e) {
 			throw $e;
 		}
@@ -480,7 +480,27 @@ class YoutubeDownloader
 				throw new YoutubeException($data['reason'], $data['errorcode']);
 		}
 
-		$result['title'] = trim($data['title']);
+		$player = isset($data['player_response']) ? json_decode($data['player_response'], true) : array();
+
+		if (isset($player['videoDetails'])) {
+			$player = $player['videoDetails'];
+			$data['video_id'] = @$data['video_id'] ?: $player['videoId'];
+			$data['title'] = @$data['title'] ?: $player['title'];
+			$data['length_seconds'] = @$data['length_seconds'] ?: $player['lengthSeconds'];
+			$data['view_count'] = @$data['view_count'] ?: $player['viewCount'];
+			$data['author'] = @$data['author'] ?: $player['author'];
+			$data['live_playback'] = @$data['live_playback'] ?: $player['isLiveContent'];
+
+			// TODO: Do something about caption
+			// if (!@$data['caption_tracks'] && isset($player['captions']['playerCaptionsTracklistRenderer']['captionTracks'])) {
+			// 	$data['caption_tracks'] = array_map(function($track='')
+			// 	{
+			// 		# code...
+			// 	}, $player['captions']['playerCaptionsTracklistRenderer']['captionTracks']);
+			// }
+		}
+
+		$result['title'] = trim(@$data['title'] ?: '');
 		$result['image'] = array(
 			'max_resolution' => 'https://i.ytimg.com/vi/' . $this->videoId . '/maxresdefault.jpg',
 			'high_quality' => 'https://i.ytimg.com/vi/' . $this->videoId . '/hqdefault.jpg',
@@ -494,12 +514,12 @@ class YoutubeDownloader
 				'https://i.ytimg.com/vi/' . $this->videoId . '/3.jpg'
 			)
 		);
-		$result['length_seconds'] = $data['length_seconds'];
-		$result['duration'] = vsprintf('%02d:%02d:%02d', $this->parseFloatTime($result['length_seconds']));
-		$result['video_id'] = $data['video_id'];
-		$result['views'] = $data['view_count'];
-		$result['rating'] = round($data['avg_rating']);
-		$result['author'] = trim($data['author']);
+		$result['length_seconds'] = @$data['length_seconds'] ?: 0;
+		$result['duration'] = vsprintf('%02d:%02d:%02d', $this->parseFloatTime(@$result['length_seconds'] ?: 0));
+		$result['video_id'] = @$data['video_id'] ?: '';
+		$result['views'] = @$data['view_count'] ?: 0;
+		$result['rating'] = round(@$data['avg_rating'] ?: 0);
+		$result['author'] = trim(@$data['author'] ?: '');
 
 		$result['captions'] = array();
 		if (isset($data['has_cc']) && $data['has_cc'] === 'True')
@@ -532,9 +552,9 @@ class YoutubeDownloader
 				if (isset($data['decryptionObject']) && isset($stream_maps[$key]['s'])) {
 					try {
 						$stream_maps[$key]['url'] .= '&signature=' . $this->decryptSignature(
-							$stream_maps[$key]['s'], // Encrypted signature,
-							$data['decryptionObject'] // Decryption object
-						);
+								$stream_maps[$key]['s'], // Encrypted signature,
+								$data['decryptionObject'] // Decryption object
+							);
 						// TODO: $stream_maps[$key]['url'] .= '&title=' . urlencode($fileName)
 					} catch (YoutubeException $e) {
 						throw $e;
@@ -558,13 +578,12 @@ class YoutubeDownloader
 				$adaptive_fmts = explode(',', $data['adaptive_fmts']);
 			foreach ($adaptive_fmts as $key => $value) {
 				$adaptive_fmts[$key] = $this->decodeString($value);
-
 				if (isset($data['decryptionObject']) && isset($adaptive_fmts[$key]['s'])) {
 					try {
 						$adaptive_fmts[$key]['url'] .= '&signature=' . $this->decryptSignature(
-							$adaptive_fmts[$key]['s'], // Encrypted signature,
-							$data['decryptionObject'] // Decryption object
-						);
+								$adaptive_fmts[$key]['s'], // Encrypted signature,
+								$data['decryptionObject'] // Decryption object
+							);
 						// TODO: $adaptive_fmts[$key]['url'] .= '&title=' . urlencode($fileName)
 					} catch (YoutubeException $e) {
 						throw $e;
